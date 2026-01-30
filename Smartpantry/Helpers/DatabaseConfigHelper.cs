@@ -15,7 +15,7 @@ namespace Smartpantry.Helpers
             // Read connection string by name from App.config
             // https://learn.microsoft.com/en-us/dotnet/framework/data/adonet/connection-strings-and-configuration-files?utm_source=chatgpt.com
             ConnectionStringSettings settings =
-                ConfigurationManager.ConnectionStrings["FoodManagerDb"];
+            ConfigurationManager.ConnectionStrings["FoodManagerDb"];
 
             if (settings == null)
                 throw new Exception("Database connection string 'FoodManagerDb' not found in App.config");
