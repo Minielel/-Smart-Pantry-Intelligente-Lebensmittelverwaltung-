@@ -8,7 +8,7 @@ using Smartpantry.Helpers;
 
 namespace Smartpantry.ViewModels
 {
-    public class SettingsViewModel
+    public class SettingsViewModel : BaseViewModel
     {
     }
 }
