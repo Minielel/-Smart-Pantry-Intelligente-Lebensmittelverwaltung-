@@ -1,0 +1,95 @@
+<!--
+Datei: SettingsView.xaml
+
+Beschreibung:
+Diese XAML-Datei beschreibt das Aussehen einer Seite der App. Hier wird festgelegt, wie die Benutzeroberflaeche aufgebaut ist und welche Steuerelemente angezeigt werden.
+
+Hinweis fuer die Vorstellung:
+Wenn man diese Datei erklaert, kann man sagen, dass XAML nur fuer den sichtbaren
+Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewModel.
+-->
+
+<UserControl x:Class="SmartPantry2.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <TextBlock Text="{DynamicResource Title_Settings}" FontSize="34" FontWeight="SemiBold" Margin="0,0,0,16"/>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="18"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                
+                <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}">
+                    <StackPanel>
+                        <Border Style="{StaticResource PillHeaderBorderStyle}" Margin="0,0,0,14">
+	                            <TextBlock Style="{StaticResource PillHeaderTextStyle}" Text="{DynamicResource Title_Settings}"/>
+                        </Border>
+
+                        <TextBlock Text="{DynamicResource Settings_Theme}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                            <Button Content="{DynamicResource Theme_Green}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"
+                                    Command="{Binding SetThemeCommand}" CommandParameter="green"/>
+                            <Button Content="{DynamicResource Theme_Blue}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"
+                                    Command="{Binding SetThemeCommand}" CommandParameter="blue"/>
+                            <Button Content="{DynamicResource Theme_Orange}" Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding SetThemeCommand}" CommandParameter="orange"/>
+                        </StackPanel>
+
+                        <TextBlock Text="{DynamicResource Settings_Language}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="{DynamicResource Lang_German}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0"
+                                    Command="{Binding SetLanguageCommand}" CommandParameter="de"/>
+                            <Button Content="{DynamicResource Lang_English}" Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding SetLanguageCommand}" CommandParameter="en"/>
+                        </StackPanel>
+
+                        <Button Content="{DynamicResource Btn_Save}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,16,0,0"
+                                Command="{Binding SaveSettingsCommand}"/>
+                    </StackPanel>
+                </Border>
+
+                
+                <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                    <StackPanel>
+                        <Border Style="{StaticResource PillHeaderBorderStyle}" Margin="0,0,0,14">
+                            <TextBlock Style="{StaticResource PillHeaderTextStyle}" Text="{DynamicResource Settings_Profile}"/>
+                        </Border>
+
+                        <TextBlock Text="{DynamicResource Login_Username}"/>
+                        <TextBox Text="{Binding Username}" Margin="0,4,0,10"/>
+
+                        <TextBlock Text="{DynamicResource Settings_Email}"/>
+                        <TextBox Text="{Binding Email}" Margin="0,4,0,10"/>
+
+                        <TextBlock Text="{DynamicResource Settings_Role}"/>
+                        <ComboBox SelectedValue="{Binding Role}" SelectedValuePath="Content" Margin="0,4,0,10">
+                            <ComboBoxItem Content="standard"/>
+                            <ComboBoxItem Content="admin"/>
+                        </ComboBox>
+
+                        <Button Content="{DynamicResource Btn_Save}" Style="{StaticResource PrimaryButtonStyle}" Command="{Binding SaveProfileCommand}"/>
+
+                        <Separator Margin="0,14,0,14"/>
+
+                        <TextBlock Text="{DynamicResource Btn_ChangePassword}" FontWeight="SemiBold"/>
+                        <TextBlock Text="{DynamicResource Settings_CurrentPassword}" Margin="0,8,0,0"/>
+                        <PasswordBox x:Name="CurrentPwd" Margin="0,4,0,10" PasswordChanged="CurrentPwd_OnPasswordChanged"/>
+
+                        <TextBlock Text="{DynamicResource Settings_NewPassword}"/>
+                        <PasswordBox x:Name="NewPwd" Margin="0,4,0,10" PasswordChanged="NewPwd_OnPasswordChanged"/>
+
+                        <Button Content="{DynamicResource Btn_ChangePassword}" Style="{StaticResource SecondaryButtonStyle}" Command="{Binding ChangePasswordCommand}"/>
+
+                        <TextBlock Text="{Binding StatusMessage}" Foreground="DarkRed" Margin="0,14,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

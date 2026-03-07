@@ -1,0 +1,36 @@
+// ------------------------------------------------------------
+// Datei: ShoppingItem.cs
+//
+// Beschreibung:
+// Diese Datei beschreibt ein Datenmodell. Solche Klassen stellen die Informationen dar, die in der App und in der Datenbank gespeichert werden.
+//
+// Hinweis fuer die Vorstellung:
+// Wenn man diese Datei in der Schule erklaeren moechte, kann man sagen,
+// dass sie einen bestimmten Baustein der App uebernimmt und dadurch hilft,
+// die Anwendung klar zu strukturieren.
+// ------------------------------------------------------------
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Smartpantry.Models
+{
+    public class ShoppingItem
+    {
+        public int Id { get; set; }
+
+        public int UserId { get; set; }
+
+        public string Name { get; set; } = string.Empty;
+
+        public decimal Amount { get; set; }
+
+        public string Unit { get; set; } = string.Empty;
+
+        public bool IsBought { get; set; }
+
+        public User? User { get; set; }
+    }
+}

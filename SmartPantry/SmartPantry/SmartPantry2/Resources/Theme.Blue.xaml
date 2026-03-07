@@ -1,0 +1,18 @@
+<!--
+Datei: Theme.Blue.xaml
+
+Beschreibung:
+Diese XAML-Datei enthaelt Ressourcen wie Farben, Texte oder Styles. Damit kann das Aussehen der App zentral angepasst werden.
+
+Hinweis fuer die Vorstellung:
+Wenn man diese Datei erklaert, kann man sagen, dass XAML nur fuer den sichtbaren
+Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewModel.
+-->
+
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Color x:Key="AccentColor">#3B82F6</Color>
+  <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
+  <Color x:Key="SidebarColor">#1E3A8A</Color>
+  <SolidColorBrush x:Key="SidebarBrush" Color="{StaticResource SidebarColor}"/>
+</ResourceDictionary>

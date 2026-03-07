@@ -1,0 +1,97 @@
+<!--
+Datei: Strings.en.xaml
+
+Beschreibung:
+Diese XAML-Datei enthaelt Ressourcen wie Farben, Texte oder Styles. Damit kann das Aussehen der App zentral angepasst werden.
+
+Hinweis fuer die Vorstellung:
+Wenn man diese Datei erklaert, kann man sagen, dass XAML nur fuer den sichtbaren
+Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewModel.
+-->
+
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+  <sys:String x:Key="App_Title">SmartPantry</sys:String>
+  <sys:String x:Key="Sidebar_LoginHint">Please log in</sys:String>
+  <sys:String x:Key="Btn_Logout">Logout</sys:String>
+
+  <sys:String x:Key="Nav_Dashboard">Dashboard</sys:String>
+  <sys:String x:Key="Nav_Food">Pantry</sys:String>
+  <sys:String x:Key="Nav_Recipes">Recipes</sys:String>
+  <sys:String x:Key="Nav_Plan">Plan</sys:String>
+  <sys:String x:Key="Nav_Shopping">Shopping</sys:String>
+  <sys:String x:Key="Nav_Settings">Settings</sys:String>
+
+  <sys:String x:Key="Btn_Add">Add</sys:String>
+  <sys:String x:Key="Btn_Select">Select</sys:String>
+  <sys:String x:Key="Btn_Save">Save</sys:String>
+  <sys:String x:Key="Btn_Delete">Delete</sys:String>
+  <sys:String x:Key="Btn_Login">Login</sys:String>
+  <sys:String x:Key="Btn_Register">Register</sys:String>
+  <sys:String x:Key="Btn_Refresh">Refresh</sys:String>
+  <sys:String x:Key="Btn_AddImage">Add image</sys:String>
+  <sys:String x:Key="Btn_AddIngredient">Choose ingredient</sys:String>
+  <sys:String x:Key="Btn_RemoveIngredient">Remove</sys:String>
+  <sys:String x:Key="Btn_SelectRecipe">Select recipe</sys:String>
+  <sys:String x:Key="Btn_DeleteEntry">Delete entry</sys:String>
+  <sys:String x:Key="Btn_ChangePassword">Change password</sys:String>
+
+  <sys:String x:Key="Title_Shopping">Shopping</sys:String>
+  <sys:String x:Key="Title_Food">Pantry</sys:String>
+  <sys:String x:Key="Title_Recipes">Recipes</sys:String>
+  <sys:String x:Key="Title_Plan">Plan</sys:String>
+  <sys:String x:Key="Title_Settings">Settings</sys:String>
+  <sys:String x:Key="Title_Login">Login</sys:String>
+
+  <sys:String x:Key="Dash_Items">Items</sys:String>
+  <sys:String x:Key="Dash_Expiring">Expiring soon</sys:String>
+  <sys:String x:Key="Dash_Recipes">Ideas</sys:String>
+  <sys:String x:Key="Dash_Restock">Buy again</sys:String>
+
+  <sys:String x:Key="Food_ListHeader">Pantry</sys:String>
+  <sys:String x:Key="Food_AddHeader">Add food</sys:String>
+  <sys:String x:Key="Label_Name">Name</sys:String>
+  <sys:String x:Key="Label_Amount">Amount</sys:String>
+  <sys:String x:Key="Label_Unit">Unit</sys:String>
+  <sys:String x:Key="Label_ExpiryDate">Expiry date</sys:String>
+
+  <sys:String x:Key="Login_Username">Username</sys:String>
+  <sys:String x:Key="Login_Password">Password</sys:String>
+  <sys:String x:Key="Login_EmailOptional">Email (optional for register)</sys:String>
+
+  <sys:String x:Key="Recipes_ListHeader">Recipes</sys:String>
+  <sys:String x:Key="Recipes_DetailHeader">Recipe</sys:String>
+  <sys:String x:Key="Recipes_Description">Description</sys:String>
+  <sys:String x:Key="Recipes_Ingredients">Ingredients</sys:String>
+  <sys:String x:Key="Recipes_Instructions">Instructions</sys:String>
+  <sys:String x:Key="Recipes_SaveTooltip">Save recipe</sys:String>
+
+  <sys:String x:Key="Plan_Week">Week</sys:String>
+  <sys:String x:Key="Plan_AddHeader">Add plan</sys:String>
+  <sys:String x:Key="Plan_Recipe">Recipe</sys:String>
+  <sys:String x:Key="Plan_Day">Day</sys:String>
+  <sys:String x:Key="Plan_When">When</sys:String>
+  <sys:String x:Key="Plan_Morning">Morning</sys:String>
+  <sys:String x:Key="Plan_Noon">Lunch</sys:String>
+  <sys:String x:Key="Plan_Evening">Evening</sys:String>
+
+  <sys:String x:Key="Shopping_ListHeader">Shopping list</sys:String>
+  <sys:String x:Key="Shopping_NewHeader">New</sys:String>
+  <sys:String x:Key="Shopping_ToFood">To pantry</sys:String>
+  <sys:String x:Key="Shopping_ToFoodExpiry">Expiry date for pantry</sys:String>
+  <sys:String x:Key="Shopping_Bought">Bought</sys:String>
+
+  <sys:String x:Key="Settings_Theme">Theme</sys:String>
+  <sys:String x:Key="Settings_Language">Language</sys:String>
+  <sys:String x:Key="Settings_Profile">Profile</sys:String>
+  <sys:String x:Key="Settings_Email">Email</sys:String>
+  <sys:String x:Key="Settings_Role">Role</sys:String>
+  <sys:String x:Key="Settings_CurrentPassword">Current password</sys:String>
+  <sys:String x:Key="Settings_NewPassword">New password</sys:String>
+  <sys:String x:Key="Theme_Green">Green</sys:String>
+  <sys:String x:Key="Theme_Blue">Blue</sys:String>
+  <sys:String x:Key="Theme_Orange">Orange</sys:String>
+  <sys:String x:Key="Lang_German">German</sys:String>
+  <sys:String x:Key="Lang_English">English</sys:String>
+</ResourceDictionary>

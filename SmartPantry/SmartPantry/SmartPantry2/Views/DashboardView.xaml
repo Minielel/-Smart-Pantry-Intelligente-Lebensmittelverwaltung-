@@ -1,0 +1,77 @@
+<!--
+Datei: DashboardView.xaml
+
+Beschreibung:
+Diese XAML-Datei beschreibt das Aussehen einer Seite der App. Hier wird festgelegt, wie die Benutzeroberflaeche aufgebaut ist und welche Steuerelemente angezeigt werden.
+
+Hinweis fuer die Vorstellung:
+Wenn man diese Datei erklaert, kann man sagen, dass XAML nur fuer den sichtbaren
+Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewModel.
+-->
+
+<UserControl x:Class="SmartPantry2.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="{DynamicResource Nav_Dashboard}" FontSize="34" FontWeight="SemiBold" Margin="0,0,0,16"/>
+
+        <StackPanel Grid.Row="1">
+            <WrapPanel>
+                <Border Style="{StaticResource CardBorderStyle}" Width="210" Height="140">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Dash_Items}" FontSize="18" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding TotalFoodItems}" FontSize="46" FontWeight="SemiBold" Margin="0,6,0,0"/>
+                    </StackPanel>
+                </Border>
+
+	                
+	                <Border Width="210" Height="140">
+                    <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+                            <Setter Property="Background" Value="{DynamicResource Surface2Brush}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ExpiryAlertLevel}" Value="Soon">
+                                    <Setter Property="Background" Value="#FFF3D57A"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ExpiryAlertLevel}" Value="Expired">
+                                    <Setter Property="Background" Value="#FFF09A9A"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Dash_Expiring}" FontSize="18" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding ExpiringSoon}" FontSize="46" FontWeight="SemiBold" Margin="0,6,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardBorderStyle}" Width="210" Height="140">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Dash_Recipes}" FontSize="18" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding TotalRecipes}" FontSize="46" FontWeight="SemiBold" Margin="0,6,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardBorderStyle}" Width="210" Height="140">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Dash_Restock}" FontSize="18" FontWeight="SemiBold"/>
+                        
+                        <TextBlock Text="{Binding ExpiringSoon}" FontSize="46" FontWeight="SemiBold" Margin="0,6,0,0"/>
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                <Button Style="{StaticResource SecondaryButtonStyle}" Content="{DynamicResource Btn_Refresh}" Command="{Binding RefreshCommand}" MinWidth="140"/>
+            </StackPanel>
+
+            <TextBlock Text="{Binding StatusMessage}" Margin="0,12,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}"/>
+        </StackPanel>
+    </Grid>
+</UserControl>
