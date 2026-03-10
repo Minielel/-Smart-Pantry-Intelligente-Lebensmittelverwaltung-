@@ -1,97 +1,145 @@
 <!--
-Datei: Strings.de.xaml
+====================================================================
+Datei:   Strings.de.xaml
+Schicht: Ressourcen / Lokalisierung
 
-Beschreibung:
-Diese XAML-Datei enthaelt Ressourcen wie Farben, Texte oder Styles. Damit kann das Aussehen der App zentral angepasst werden.
+ZWECK:
+  Enthält alle deutschen UI-Texte der App als benannte Ressourcen.
+  Ermöglicht die Trennung von Text und Layout:
+  XAML-Elemente referenzieren Schlüssel, nicht direkte Texte.
 
-Hinweis fuer die Vorstellung:
-Wenn man diese Datei erklaert, kann man sagen, dass XAML nur fuer den sichtbaren
-Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewModel.
+ROTER FADEN:
+  SettingsViewModel.SetLanguage("de")
+    → ApplyLanguageResources("de")
+      → ResourceSwapService.SwapMergedDictionary("Strings.", Strings.de.xaml)
+        → diese Datei wird als aktives Sprach-Dictionary gesetzt
+          → alle {DynamicResource Nav_Dashboard} Bindings zeigen "Dashboard"
+          → alle {DynamicResource Nav_Food} Bindings zeigen "Food" usw.
+
+ZUSAMMENSPIEL MIT Strings.en.xaml:
+  BEIDE Dateien definieren dieselben x:Key-Namen.
+  Sprache wechseln = Dictionary austauschen → alle Texte sofort anders.
+  → keine Änderung im XAML-Layout nötig beim Sprachwechsel!
+
+VERWENDUNG IM XAML:
+  <TextBlock Text="{DynamicResource Nav_Dashboard}"/>
+  <Button Content="{DynamicResource Btn_Add}"/>
+  <Label Content="{DynamicResource Label_Name}"/>
+
+VERWENDETE QUELLEN:
+  WPF Localization mit ResourceDictionary:
+    https://learn.microsoft.com/dotnet/desktop/wpf/advanced/wpf-globalization-and-localization-overview
+  x:Key-Attribut:
+    https://learn.microsoft.com/dotnet/desktop/wpf/xaml/xkey-directive
+  DynamicResource für Live-Sprachwechsel:
+    https://learn.microsoft.com/dotnet/desktop/wpf/systems/xaml-resources-dynamic-static-comparison
+  system:String (für String-Ressourcen in XAML):
+    https://learn.microsoft.com/dotnet/api/system.string
+====================================================================
 -->
 
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
-  <sys:String x:Key="App_Title">SmartPantry</sys:String>
-  <sys:String x:Key="Sidebar_LoginHint">Bitte einloggen</sys:String>
-  <sys:String x:Key="Btn_Logout">Logout</sys:String>
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
 
-  <sys:String x:Key="Nav_Dashboard">Dashboard</sys:String>
-  <sys:String x:Key="Nav_Food">Food</sys:String>
-  <sys:String x:Key="Nav_Recipes">Rezepte</sys:String>
-  <sys:String x:Key="Nav_Plan">Plan</sys:String>
-  <sys:String x:Key="Nav_Shopping">Einkauf</sys:String>
-  <sys:String x:Key="Nav_Settings">Settings</sys:String>
+  <!-- ── NAVIGATION (Sidebar-Buttons) ──────────────────────────────────────── -->
+  <!--
+    system:String x:Key="...": definiert einen String als benannte Ressource.
+    x:Key: der Name mit dem {DynamicResource Nav_Dashboard} diese Ressource findet.
+    Quelle system:String: https://learn.microsoft.com/dotnet/api/system.string
+  -->
 
-  <sys:String x:Key="Btn_Add">Hinzufügen</sys:String>
-  <sys:String x:Key="Btn_Select">Auswählen</sys:String>
-  <sys:String x:Key="Btn_Save">Speichern</sys:String>
-  <sys:String x:Key="Btn_Delete">Löschen</sys:String>
-  <sys:String x:Key="Btn_Login">Login</sys:String>
-  <sys:String x:Key="Btn_Register">Registrieren</sys:String>
-  <sys:String x:Key="Btn_Refresh">Aktualisieren</sys:String>
-  <sys:String x:Key="Btn_AddImage">Bild hinzufügen</sys:String>
-  <sys:String x:Key="Btn_AddIngredient">Zutat auswählen</sys:String>
-  <sys:String x:Key="Btn_RemoveIngredient">Entfernen</sys:String>
-  <sys:String x:Key="Btn_SelectRecipe">Rezept auswählen</sys:String>
-  <sys:String x:Key="Btn_DeleteEntry">Eintrag löschen</sys:String>
-  <sys:String x:Key="Btn_ChangePassword">Passwort ändern</sys:String>
+  <!-- Navigations-Label: Startseite mit Statistiken -->
+  <system:String x:Key="Nav_Dashboard">Dashboard</system:String>
 
-  <sys:String x:Key="Title_Shopping">Einkauf</sys:String>
-  <sys:String x:Key="Title_Food">Food</sys:String>
-  <sys:String x:Key="Title_Recipes">Rezepte</sys:String>
-  <sys:String x:Key="Title_Plan">Plan</sys:String>
-  <sys:String x:Key="Title_Settings">Settings</sys:String>
-  <sys:String x:Key="Title_Login">Login</sys:String>
+  <!-- Navigations-Label: Vorratsverwaltung -->
+  <system:String x:Key="Nav_Food">Food</system:String>
 
-  <sys:String x:Key="Dash_Items">Items</sys:String>
-  <sys:String x:Key="Dash_Expiring">Läuft bald ab</sys:String>
-  <sys:String x:Key="Dash_Recipes">Ideen</sys:String>
-  <sys:String x:Key="Dash_Restock">Nachkaufen</sys:String>
+  <!-- Navigations-Label: Rezepte-Verwaltung -->
+  <system:String x:Key="Nav_Recipes">Rezepte</system:String>
 
-  <sys:String x:Key="Food_ListHeader">Food</sys:String>
-  <sys:String x:Key="Food_AddHeader">Food +</sys:String>
-  <sys:String x:Key="Label_Name">Name</sys:String>
-  <sys:String x:Key="Label_Amount">Menge</sys:String>
-  <sys:String x:Key="Label_Unit">Einheit</sys:String>
-  <sys:String x:Key="Label_ExpiryDate">Ablaufdatum</sys:String>
+  <!-- Navigations-Label: Wochenplan -->
+  <system:String x:Key="Nav_MealPlan">Plan</system:String>
 
-  <sys:String x:Key="Login_Username">Username</sys:String>
-  <sys:String x:Key="Login_Password">Passwort</sys:String>
-  <sys:String x:Key="Login_EmailOptional">E-Mail (optional für Register)</sys:String>
+  <!-- Navigations-Label: Einkaufsliste -->
+  <system:String x:Key="Nav_Shopping">Einkauf</system:String>
 
-  <sys:String x:Key="Recipes_ListHeader">Rezepte</sys:String>
-  <sys:String x:Key="Recipes_DetailHeader">Rezept</sys:String>
-  <sys:String x:Key="Recipes_Description">Beschreibung</sys:String>
-  <sys:String x:Key="Recipes_Ingredients">Zutaten</sys:String>
-  <sys:String x:Key="Recipes_Instructions">Anleitung</sys:String>
-  <sys:String x:Key="Recipes_SaveTooltip">Rezept speichern</sys:String>
+  <!-- Navigations-Label: Einstellungen -->
+  <system:String x:Key="Nav_Settings">Einstellungen</system:String>
 
-  <sys:String x:Key="Plan_Week">Woche</sys:String>
-  <sys:String x:Key="Plan_AddHeader">Plan +</sys:String>
-  <sys:String x:Key="Plan_Recipe">Rezept</sys:String>
-  <sys:String x:Key="Plan_Day">Tag</sys:String>
-  <sys:String x:Key="Plan_When">Wann</sys:String>
-  <sys:String x:Key="Plan_Morning">Morgens</sys:String>
-  <sys:String x:Key="Plan_Noon">Mittags</sys:String>
-  <sys:String x:Key="Plan_Evening">Abends</sys:String>
+  <!-- Navigations-Label: Ausloggen -->
+  <system:String x:Key="Nav_Logout">Abmelden</system:String>
 
-  <sys:String x:Key="Shopping_ListHeader">Einkaufsliste</sys:String>
-  <sys:String x:Key="Shopping_NewHeader">Neu</sys:String>
-  <sys:String x:Key="Shopping_ToFood">Zu Food</sys:String>
-  <sys:String x:Key="Shopping_ToFoodExpiry">Ablaufdatum für Zu Food</sys:String>
-  <sys:String x:Key="Shopping_Bought">Gekauft</sys:String>
+  <!-- ── BUTTONS ────────────────────────────────────────────────────────────── -->
 
-  <sys:String x:Key="Settings_Theme">Theme</sys:String>
-  <sys:String x:Key="Settings_Language">Sprache</sys:String>
-  <sys:String x:Key="Settings_Profile">Profil</sys:String>
-  <sys:String x:Key="Settings_Email">E-Mail</sys:String>
-  <sys:String x:Key="Settings_Role">Rolle</sys:String>
-  <sys:String x:Key="Settings_CurrentPassword">Aktuelles Passwort</sys:String>
-  <sys:String x:Key="Settings_NewPassword">Neues Passwort</sys:String>
-  <sys:String x:Key="Theme_Green">Green</sys:String>
-  <sys:String x:Key="Theme_Blue">Blue</sys:String>
-  <sys:String x:Key="Theme_Orange">Orange</sys:String>
-  <sys:String x:Key="Lang_German">Deutsch</sys:String>
-  <sys:String x:Key="Lang_English">English</sys:String>
+  <!-- Allgemeiner Hinzufügen-Button (Formular-Bestätigung) -->
+  <system:String x:Key="Btn_Add">Hinzufügen</system:String>
+
+  <!-- Speichern-Button in SettingsView -->
+  <system:String x:Key="Btn_Save">Speichern</system:String>
+
+  <!-- Löschen-Button (auf Kacheln und in Listen) -->
+  <system:String x:Key="Btn_Delete">Löschen</system:String>
+
+  <!-- Abbrechen-Button (z.B. Auswahlmodus verlassen) -->
+  <system:String x:Key="Btn_Cancel">Abbrechen</system:String>
+
+  <!-- Login-Button in LoginView -->
+  <system:String x:Key="Btn_Login">Anmelden</system:String>
+
+  <!-- Registrier-Button in LoginView -->
+  <system:String x:Key="Btn_Register">Registrieren</system:String>
+
+  <!-- ── FORMULAR-LABELS ──────────────────────────────────────────────────────── -->
+
+  <!-- Label für Name-Eingabefelder (Food, Rezept, Zutat) -->
+  <system:String x:Key="Label_Name">Name</system:String>
+
+  <!-- Label für Mengen-Eingabefelder -->
+  <system:String x:Key="Label_Amount">Menge</system:String>
+
+  <!-- Label für Einheit-Eingabefelder -->
+  <system:String x:Key="Label_Unit">Einheit</system:String>
+
+  <!-- Label für Ablaufdatum-DatePicker -->
+  <system:String x:Key="Label_ExpiryDate">Ablaufdatum</system:String>
+
+  <!-- Label für Beschreibungs-Textfelder (Rezepte) -->
+  <system:String x:Key="Label_Description">Beschreibung</system:String>
+
+  <!-- Label für Anleitungs-Textfelder (Rezepte) -->
+  <system:String x:Key="Label_Instructions">Anleitung</system:String>
+
+  <!-- ── DASHBOARD-KACHELN ──────────────────────────────────────────────────── -->
+
+  <!-- Kachel: Gesamtanzahl der Lebensmittel -->
+  <system:String x:Key="Dashboard_TotalItems">Items im Vorrat</system:String>
+
+  <!-- Kachel: bald ablaufende Items (gelbe Warnung) -->
+  <system:String x:Key="Dashboard_ExpiringSoon">Läuft bald ab</system:String>
+
+  <!-- Kachel: bereits abgelaufene Items (rote Warnung) -->
+  <system:String x:Key="Dashboard_Expired">Abgelaufen</system:String>
+
+  <!-- Kachel: Anzahl der Rezepte -->
+  <system:String x:Key="Dashboard_Recipes">Ideen</system:String>
+
+  <!-- ── MAHLZEITTYPEN (für MealPlanView Anzeige) ───────────────────────────── -->
+  <!--
+    Diese Strings werden in MealPlanView.xaml per DataTrigger genutzt:
+    <DataTrigger Binding="{Binding MealType}" Value="breakfast">
+        <Setter Property="Text" Value="{DynamicResource MealType_Breakfast}"/>
+    </DataTrigger>
+    DB speichert englische Werte, View zeigt deutsche Texte.
+  -->
+
+  <!-- "breakfast" → Morgens -->
+  <system:String x:Key="MealType_Breakfast">Morgens</system:String>
+
+  <!-- "lunch" → Mittags -->
+  <system:String x:Key="MealType_Lunch">Mittags</system:String>
+
+  <!-- "dinner" → Abends -->
+  <system:String x:Key="MealType_Dinner">Abends</system:String>
+
 </ResourceDictionary>

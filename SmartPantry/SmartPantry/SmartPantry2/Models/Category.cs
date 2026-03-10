@@ -1,28 +1,52 @@
-// ------------------------------------------------------------
-// Datei: Category.cs
+// ============================================================
+// Datei:   Category.cs
+// Schicht: Model / Datenmodell
+// Datenbanktabelle: categories
 //
-// Beschreibung:
-// Diese Datei beschreibt ein Datenmodell. Solche Klassen stellen die Informationen dar, die in der App und in der Datenbank gespeichert werden.
+// ZWECK:
+//   Repräsentiert eine Lebensmittelkategorie.
+//   Jedes FoodItem kann optional einer Kategorie zugeordnet werden.
 //
-// Hinweis fuer die Vorstellung:
-// Wenn man diese Datei in der Schule erklaeren moechte, kann man sagen,
-// dass sie einen bestimmten Baustein der App uebernimmt und dadurch hilft,
-// die Anwendung klar zu strukturieren.
-// ------------------------------------------------------------
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+// ROTER FADEN:
+//   categories ──→ food_items (1:n, über food_items.category_id)
+//   Wenn Kategorie gelöscht → food_items.category_id wird NULL
+//   (ON DELETE SET NULL im SQL-Schema)
+//
+//   Wird gemappt in FoodDbContext:
+//     e.ToTable("categories");
+//     e.Property(p => p.Id).HasColumnName("id");
+//     e.Property(p => p.Name).HasColumnName("name");
+//
+// USER USECASE:
+//   Aktuell kein direktes UI für Kategorien vorhanden.
+//   Tabelle ist für zukünftige Erweiterungen vorbereitet
+//   (z.B. Filteransicht nach Kategorie in FoodView).
+//
+// QUELLEN:
+//   Entity Framework Core – Modellierung:
+//   https://learn.microsoft.com/ef/core/modeling/
+//
+//   EF Core Navigation Properties:
+//   https://learn.microsoft.com/ef/core/modeling/relationships
+// ============================================================
 
 namespace Smartpantry.Models
 {
     public class Category
     {
+        // Primärschlüssel → DB-Spalte "id" (gemappt in FoodDbContext)
+        // EF Core erkennt "Id" automatisch als PK (Convention)
+        // Quelle: https://learn.microsoft.com/ef/core/modeling/keys
         public int Id { get; set; }
 
+        // Name der Kategorie (z.B. "Gemüse", "Milchprodukte", "Getränke")
+        // DB-Spalte: "name"
         public string Name { get; set; }
 
+        // Navigationsproperty: alle FoodItems dieser Kategorie
+        // EF Core nutzt dies für JOIN-Abfragen wenn Include() verwendet wird
+        // ICollection = Interface für jede Art von Sammlung (List, HashSet etc.)
+        // Quelle: https://learn.microsoft.com/ef/core/modeling/relationships/one-to-many
         public ICollection<FoodItem> FoodItems { get; set; }
     }
 }

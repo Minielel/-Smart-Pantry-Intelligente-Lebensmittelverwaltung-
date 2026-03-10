@@ -1,18 +1,78 @@
 <!--
-Datei: Theme.Blue.xaml
+====================================================================
+Datei:   Theme.Blue.xaml
+Schicht: Ressourcen / Theme
 
-Beschreibung:
-Diese XAML-Datei enthaelt Ressourcen wie Farben, Texte oder Styles. Damit kann das Aussehen der App zentral angepasst werden.
+ZWECK:
+  Definiert die Farben für das blaue Theme der App.
+  Wird von ResourceSwapService geladen wenn User "Blue" wählt.
 
-Hinweis fuer die Vorstellung:
-Wenn man diese Datei erklaert, kann man sagen, dass XAML nur fuer den sichtbaren
-Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewModel.
+ROTER FADEN:
+  SettingsViewModel.SetTheme("blue")
+    → ApplyThemeResources("blue")
+      → ResourceSwapService.SwapMergedDictionary("Theme.", Theme.Blue.xaml)
+        → diese Datei wird in Application.Resources.MergedDictionaries geladen
+          → alle Steuerelemente die {DynamicResource AccentBrush} oder
+            {DynamicResource SidebarBrush} verwenden, wechseln sofort die Farbe
+
+WICHTIG:
+  Alle UI-Elemente müssen {DynamicResource ...} statt {StaticResource ...}
+  verwenden damit der Live-Wechsel ohne App-Neustart funktioniert!
+  {StaticResource} wird nur einmal beim Start aufgelöst → reagiert nicht auf Wechsel.
+  Quelle DynamicResource:
+    https://learn.microsoft.com/dotnet/desktop/wpf/systems/xaml-resources-dynamic-static-comparison
+
+VERWENDETE QUELLEN:
+  WPF ResourceDictionary (Farbressourcen):
+    https://learn.microsoft.com/dotnet/desktop/wpf/systems/xaml-resources-overview
+  SolidColorBrush:
+    https://learn.microsoft.com/dotnet/api/system.windows.media.solidcolorbrush
+  Color-Struktur:
+    https://learn.microsoft.com/dotnet/api/system.windows.media.color
+  x:Key-Attribut (Ressourcen-Schlüssel für DynamicResource/StaticResource):
+    https://learn.microsoft.com/dotnet/desktop/wpf/xaml/xkey-directive
+  Color als Hex-Code (#RRGGBB):
+    https://learn.microsoft.com/dotnet/api/system.windows.media.color.fromargb
+====================================================================
 -->
 
+<!--
+ResourceDictionary: Container für XAML-Ressourcen die app-weit genutzt werden.
+MergedDictionaries erlaubt das Laden mehrerer Dictionaries gleichzeitig.
+Quelle: https://learn.microsoft.com/dotnet/api/system.windows.resourcedictionary
+-->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    AccentColor: Hauptakzentfarbe des blauen Themes.
+    Blau-Ton aus Tailwind CSS Blau-Palette (Blue-500).
+    Wird verwendet für: Buttons, aktive Menüpunkte, Highlights.
+    x:Key="AccentColor" → wird per {StaticResource AccentColor} in AccentBrush referenziert.
+    Quelle Color: https://learn.microsoft.com/dotnet/api/system.windows.media.color
+  -->
   <Color x:Key="AccentColor">#3B82F6</Color>
+
+  <!--
+    AccentBrush: Der eigentliche Brush den XAML-Elemente verwenden.
+    Wrapper um AccentColor damit XAML-Properties (die Brush brauchen) direkt binden können.
+    Color="{StaticResource AccentColor}": referenziert die Color oben.
+    Verwendung in XAML: Background="{DynamicResource AccentBrush}"
+    Quelle SolidColorBrush: https://learn.microsoft.com/dotnet/api/system.windows.media.solidcolorbrush
+  -->
   <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
+
+  <!--
+    SidebarColor: Farbe der linken Navigationsleiste.
+    Dunkleres Blau (Tailwind Blue-900) für guten Kontrast zum hellen Seiteninhalt.
+    Wird verwendet für: Sidebar-Hintergrund in MainWindow.xaml.
+  -->
   <Color x:Key="SidebarColor">#1E3A8A</Color>
+
+  <!--
+    SidebarBrush: Brush-Wrapper für SidebarColor.
+    Verwendung: Background="{DynamicResource SidebarBrush}" in MainWindow.xaml Sidebar-Panel.
+  -->
   <SolidColorBrush x:Key="SidebarBrush" Color="{StaticResource SidebarColor}"/>
+
 </ResourceDictionary>

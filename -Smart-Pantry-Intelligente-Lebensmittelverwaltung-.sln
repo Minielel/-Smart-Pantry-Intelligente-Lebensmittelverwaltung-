@@ -1,0 +1,32 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SmartPantry", "SmartPantry", "{B13DDF93-C4B3-8C49-E801-D1F41608E844}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SmartPantry", "SmartPantry", "{2E8ABE09-BFB1-7D8C-9C14-AF64F6BAA3F2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartPantry2", "SmartPantry\SmartPantry\SmartPantry2\SmartPantry2.csproj", "{14B3780A-04B8-7F1B-C59B-6573CDEDF1D4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{14B3780A-04B8-7F1B-C59B-6573CDEDF1D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14B3780A-04B8-7F1B-C59B-6573CDEDF1D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14B3780A-04B8-7F1B-C59B-6573CDEDF1D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14B3780A-04B8-7F1B-C59B-6573CDEDF1D4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2E8ABE09-BFB1-7D8C-9C14-AF64F6BAA3F2} = {B13DDF93-C4B3-8C49-E801-D1F41608E844}
+		{14B3780A-04B8-7F1B-C59B-6573CDEDF1D4} = {2E8ABE09-BFB1-7D8C-9C14-AF64F6BAA3F2}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A8B5F776-5910-4380-960D-B0A471FA8D81}
+	EndGlobalSection
+EndGlobal

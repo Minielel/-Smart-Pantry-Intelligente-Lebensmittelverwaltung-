@@ -1,106 +1,105 @@
-// ------------------------------------------------------------
-// Datei: RecipesViewModel.cs
+// ============================================================
+// Datei:   RecipesViewModel.cs
+// Schicht: ViewModel / Rezeptverwaltung
 //
-// Beschreibung:
-// Diese Datei gehört zur Logik der Benutzeroberfläche. In einem ViewModel werden Eingaben verarbeitet, Daten vorbereitet und Befehle für Buttons bereitgestellt.
+// ZWECK:
+//   Steuert die Rezepte-Seite: Liste, Detailformular, Zutaten-Verwaltung,
+//   Bildauswahl und Auswahlmodus für den Wochenplan.
 //
-// Hinweis fuer die Vorstellung:
-// Wenn man diese Datei in der Schule erklaeren moechte, kann man sagen,
-// dass sie einen bestimmten Baustein der App uebernimmt und dadurch hilft,
-// die Anwendung klar zu strukturieren.
-// ------------------------------------------------------------
+// ROTER FADEN:
+//   RecipesView.xaml ←→ RecipesViewModel ←→ RecipeService ←→ DB: recipes, recipe_ingredients
+//
+//   ZUTAT HINZUFÜGEN (seitenübergreifend):
+//   User klickt "Zutat auswählen" → PickFoodForIngredientCommand
+//     → RequestPickFood-Event feuert
+//     → MainViewModel: FoodVM.StartSelectionMode(callback) + NavigateTo(FoodVM)
+//     → User wählt Item in FoodView → callback(food)
+//     → SetPickedFoodName(food.Name) → NewIngredientName-Textfeld befüllt
+//
+//   AUSWAHLMODUS (für Wochenplan):
+//   MealPlanVM braucht ein Recipe-Objekt.
+//   MainViewModel ruft RecipesVM.StartSelectionMode(callback) auf.
+//   → IsSelectionMode = true → Klick auf Rezept → _recipeChosen(recipe)
+//
+//   AddRecipe() entscheidet:
+//   SelectedRecipe != null → Update() (Bearbeitungsmodus)
+//   SelectedRecipe == null → Add()    (Neuerstellungsmodus)
+//
+// USER USECASE ADMIN:
+//   "+" klicken → Formular leeren (NewRecipe())
+//   Name, Beschreibung, Anleitung eingeben
+//   Zutaten hinzufügen (manuell oder aus Vorrat auswählen)
+//   Optional: Bild auswählen (OpenImageCommand)
+//   "Add" klicken → RecipeService.Add() → Rezept + Zutaten in DB
+//   Bestehendes Rezept anklicken → Formular befüllt sich → "Add" → Update
+//
+// QUELLEN:
+//   ObservableCollection<T>:
+//   https://learn.microsoft.com/dotnet/api/system.collections.objectmodel.observablecollection-1
+//
+//   OpenFileDialog (Bildauswahl):
+//   https://learn.microsoft.com/dotnet/api/microsoft.win32.openfiledialog
+//
+//   Recipe.ImagePath ist [NotMapped]: wird nicht in DB gespeichert!
+//   Quelle: https://learn.microsoft.com/ef/core/modeling/entity-properties#excluded-properties
+// ============================================================
+
+using Microsoft.Win32;
 using Smartpantry.Helpers;
 using Smartpantry.Models;
 using SmartPantry2.Services;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
-using Microsoft.Win32;
 
 namespace Smartpantry.ViewModels
 {
-
-
-
     public class RecipesViewModel : BaseViewModel
     {
-        // Dieses ViewModel steuert die komplette Rezepte-Seite.
-        // Dazu gehoeren die Rezeptliste, das Formular, die Zutaten und die Bildauswahl.
+        // RecipeService: CRUD-Operationen für Rezepte + Zutaten in DB
         private readonly RecipeService _recipeService = new RecipeService();
 
+        // ── REZEPTLISTE ────────────────────────────────────────────────────────────
+        // ObservableCollection: WPF aktualisiert Liste automatisch bei Änderungen
+        // Quelle: https://learn.microsoft.com/dotnet/api/system.collections.objectmodel.observablecollection-1
+        private ObservableCollection<Recipe> _recipes = new();
+        public ObservableCollection<Recipe> Recipes
+        {
+            get => _recipes;
+            private set => SetProperty(ref _recipes, value);
+        }
 
-        public ObservableCollection<Recipe> Recipes { get; } = new ObservableCollection<Recipe>();
-
-
-        public ObservableCollection<RecipeIngredient> Ingredients { get; } = new ObservableCollection<RecipeIngredient>();
-
-        public bool CanEdit => UserSession.IsAdmin;
-
-
-
-        public bool IsSelectionMode { get => _isSelectionMode; private set => SetProperty(ref _isSelectionMode, value); }
-        private bool _isSelectionMode;
-        private Action<Recipe>? _recipeChosen;
-
+        // ── AUSGEWÄHLTES REZEPT (Bearbeitungsmodus) ────────────────────────────────
         private Recipe? _selectedRecipe;
-
-
         public Recipe? SelectedRecipe
         {
             get => _selectedRecipe;
             set
             {
-                if (SetProperty(ref _selectedRecipe, value))
+                if (SetProperty(ref _selectedRecipe, value) && value != null)
                 {
-
-
-
-
-                    if (IsSelectionMode && value != null)
+                    // Wenn Auswahlmodus aktiv: Callback aufrufen und abbrechen
+                    if (IsSelectionMode)
                     {
                         _recipeChosen?.Invoke(value);
                         return;
                     }
 
-                    Ingredients.Clear();
-
-                    if (value != null)
-                    {
-                        RecipeName = value.Name;
-                        Description = value.Description;
-                        Instructions = value.Instructions;
-                        SelectedImagePath = value.ImagePath ?? "";
-
-                        if (value.Ingredients != null)
-                        {
-                            foreach (var ing in value.Ingredients)
-                                Ingredients.Add(ing);
-                        }
-                    }
-
-                    NewRecipeCommand.RaiseCanExecuteChanged();
-                    AddIngredientCommand.RaiseCanExecuteChanged();
-                    RemoveIngredientCommand.RaiseCanExecuteChanged();
-                    PickFoodForIngredientCommand.RaiseCanExecuteChanged();
-                    PickImageCommand.RaiseCanExecuteChanged();
+                    // Normaler Modus: Formular mit Rezept-Daten befüllen
+                    RecipeName    = value.Name        ?? "";
+                    Description   = value.Description ?? "";
+                    Instructions  = value.Instructions ?? "";
+                    // Zutaten-Liste befüllen (aus Navigationsproperty)
+                    CurrentIngredients = new ObservableCollection<RecipeIngredient>(
+                        value.Ingredients ?? Enumerable.Empty<RecipeIngredient>());
                 }
             }
         }
 
-        private RecipeIngredient? _selectedIngredient;
-        public RecipeIngredient? SelectedIngredient
-        {
-            get => _selectedIngredient;
-            set
-            {
-                if (SetProperty(ref _selectedIngredient, value))
-                    RemoveIngredientCommand.RaiseCanExecuteChanged();
-            }
-        }
-
+        // ── FORMULAR-FELDER ────────────────────────────────────────────────────────
         private string _recipeName = "";
+        // Rezeptname (z.B. "Spaghetti Bolognese") → DB-Spalte "name"
         public string RecipeName
         {
             get => _recipeName;
@@ -112,269 +111,307 @@ namespace Smartpantry.ViewModels
         }
 
         private string _description = "";
-        public string Description { get => _description; set => SetProperty(ref _description, value); }
+        // Kurzbeschreibung → DB-Spalte "description" (TEXT)
+        public string Description
+        {
+            get => _description;
+            set => SetProperty(ref _description, value);
+        }
 
         private string _instructions = "";
-        public string Instructions { get => _instructions; set => SetProperty(ref _instructions, value); }
+        // Schritt-für-Schritt-Anleitung → DB-Spalte "instructions" (TEXT)
+        public string Instructions
+        {
+            get => _instructions;
+            set => SetProperty(ref _instructions, value);
+        }
 
-        private string _selectedImagePath = "";
-        public string SelectedImagePath { get => _selectedImagePath; set => SetProperty(ref _selectedImagePath, value); }
+        // ── ZUTATEN-VERWALTUNG ────────────────────────────────────────────────────
+        // Liste der Zutaten des aktuell bearbeiteten Rezepts
+        private ObservableCollection<RecipeIngredient> _currentIngredients = new();
+        public ObservableCollection<RecipeIngredient> CurrentIngredients
+        {
+            get => _currentIngredients;
+            set => SetProperty(ref _currentIngredients, value);
+        }
 
+        // Eingabefelder für neue Zutat
         private string _newIngredientName = "";
+        // Name der neuen Zutat (kann manuell eingegeben oder aus FoodView übernommen werden)
+        // ACHTUNG: wird gespeichert in DB als recipe_ingredients.food_item_name
         public string NewIngredientName
         {
             get => _newIngredientName;
             set
             {
                 if (SetProperty(ref _newIngredientName, value))
-                    NewRecipeCommand.RaiseCanExecuteChanged();
-                AddIngredientCommand.RaiseCanExecuteChanged();
+                    AddIngredientCommand.RaiseCanExecuteChanged();
             }
         }
 
-        private decimal _newIngredientAmount = 0;
-        public decimal NewIngredientAmount { get => _newIngredientAmount; set => SetProperty(ref _newIngredientAmount, value); }
+        private decimal _newIngredientAmount;
+        // Menge der neuen Zutat → DB-Spalte "amount"
+        public decimal NewIngredientAmount
+        {
+            get => _newIngredientAmount;
+            set => SetProperty(ref _newIngredientAmount, value);
+        }
 
-        public ObservableCollection<string> IngredientUnits { get; } = new ObservableCollection<string>(
-            new List<string> { "", "g", "ml", "Stück", "EL", "TL", "Messerspitze" });
+        private string _newIngredientUnit = "g";
+        // Einheit der neuen Zutat → DB-Spalte "unit"
+        public string NewIngredientUnit
+        {
+            get => _newIngredientUnit;
+            set => SetProperty(ref _newIngredientUnit, value);
+        }
 
-        private string _selectedIngredientUnit = "";
-        public string SelectedIngredientUnit { get => _selectedIngredientUnit; set => SetProperty(ref _selectedIngredientUnit, value); }
+        // ── BILD ──────────────────────────────────────────────────────────────────
+        // HINWEIS: ImagePath ist [NotMapped] in Recipe.cs → NICHT in DB gespeichert!
+        // Wird nur im RAM gehalten; nach App-Neustart wieder null.
+        private string? _selectedImagePath;
+        public string? SelectedImagePath
+        {
+            get => _selectedImagePath;
+            set => SetProperty(ref _selectedImagePath, value);
+        }
 
-        private string _statusMessage = "";
-        public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
+        // ── AUSWAHLMODUS ──────────────────────────────────────────────────────────
+        // true = MealPlanVM wartet auf Rezeptauswahl
+        private bool _isSelectionMode;
+        public bool IsSelectionMode
+        {
+            get => _isSelectionMode;
+            private set => SetProperty(ref _isSelectionMode, value);
+        }
 
-        public RelayCommand LoadCommand { get; }
-        public RelayCommand AddRecipeCommand { get; }
-        public RelayCommand NewRecipeCommand { get; }
+        // Callback für die Rezeptauswahl (aus MealPlanVM über MainViewModel)
+        private Action<Recipe>? _recipeChosen;
 
-        public RelayCommand AddIngredientCommand { get; }
-        public RelayCommand RemoveIngredientCommand { get; }
-
-
-        public RelayCommand<Recipe> DeleteRecipeTileCommand { get; }
-        public RelayCommand<Recipe> ChooseRecipeCommand { get; }
-
-
-        public RelayCommand PickFoodForIngredientCommand { get; }
+        // ── EVENTS FÜR SEITENÜBERGREIFENDE KOMMUNIKATION ─────────────────────────
+        // RequestPickFood: gefeuert wenn User auf "Zutat auswählen" klickt
+        // MainViewModel abonniert dieses Event und wechselt zu FoodView
+        // Quelle: https://learn.microsoft.com/dotnet/csharp/programming-guide/events/
         public event Action? RequestPickFood;
 
+        // ── BERECHTIGUNGEN ────────────────────────────────────────────────────────
+        public bool CanEdit => UserSession.IsAdmin;
 
-        public RelayCommand PickImageCommand { get; }
+        private string _statusMessage = "";
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set => SetProperty(ref _statusMessage, value);
+        }
 
+        // ── COMMANDS ──────────────────────────────────────────────────────────────
+        // Rezept hinzufügen/speichern (Add oder Update je nach SelectedRecipe)
+        public RelayCommand AddRecipeCommand { get; }
 
+        // Zutat zur aktuellen Zutaten-Liste hinzufügen
+        public RelayCommand AddIngredientCommand { get; }
+
+        // Zutat aus der Liste entfernen
+        public RelayCommand<RecipeIngredient> RemoveIngredientCommand { get; }
+
+        // "×"-Button auf einer Rezept-Kachel: Rezept löschen
+        public RelayCommand<Recipe> DeleteRecipeTileCommand { get; }
+
+        // Formular leeren für ein neues Rezept
+        public RelayCommand NewRecipeCommand { get; }
+
+        // Öffnet OpenFileDialog für Bildauswahl
+        public RelayCommand OpenImageCommand { get; }
+
+        // "Zutat auswählen"-Button: feuert RequestPickFood-Event
+        public RelayCommand PickFoodForIngredientCommand { get; }
 
         public RecipesViewModel()
         {
-            LoadCommand = new RelayCommand(Load);
-            AddRecipeCommand = new RelayCommand(AddRecipe, CanAddRecipe);
-            NewRecipeCommand = new RelayCommand(NewRecipe, () => CanEdit);
+            AddRecipeCommand      = new RelayCommand(AddRecipe, () => CanEdit && !string.IsNullOrWhiteSpace(RecipeName));
+            AddIngredientCommand  = new RelayCommand(AddIngredient, () => !string.IsNullOrWhiteSpace(NewIngredientName));
+            RemoveIngredientCommand = new RelayCommand<RecipeIngredient>(RemoveIngredient);
+            DeleteRecipeTileCommand = new RelayCommand<Recipe>(DeleteRecipeTile, r => CanEdit && r != null);
+            NewRecipeCommand      = new RelayCommand(NewRecipe);
+            OpenImageCommand      = new RelayCommand(OpenImageDialog);
 
-            AddIngredientCommand = new RelayCommand(AddIngredient, CanAddIngredient);
-            RemoveIngredientCommand = new RelayCommand(RemoveIngredient, () => SelectedIngredient != null);
+            // PickFoodForIngredientCommand: teilt MainViewModel mit "Ich brauche ein Food-Item"
+            PickFoodForIngredientCommand = new RelayCommand(
+                () => RequestPickFood?.Invoke(),
+                // Nur ausführbar wenn CanEdit (Admin)
+                () => CanEdit);
 
-            DeleteRecipeTileCommand = new RelayCommand<Recipe>(DeleteRecipeTile, recipe => CanEdit && recipe != null);
-            ChooseRecipeCommand = new RelayCommand<Recipe>(ChooseRecipe, recipe => recipe != null);
-
-            PickFoodForIngredientCommand = new RelayCommand(() => RequestPickFood?.Invoke(), () => CanEdit);
-
-            PickImageCommand = new RelayCommand(PickImage, () => CanEdit);
-
+            // Bei Login/Logout: neu laden + Berechtigungen aktualisieren
             UserSession.CurrentUserChanged += () =>
             {
-                Load();
                 OnPropertyChanged(nameof(CanEdit));
                 AddRecipeCommand.RaiseCanExecuteChanged();
-                NewRecipeCommand.RaiseCanExecuteChanged();
-                AddIngredientCommand.RaiseCanExecuteChanged();
-                RemoveIngredientCommand.RaiseCanExecuteChanged();
-                PickFoodForIngredientCommand.RaiseCanExecuteChanged();
-                PickImageCommand.RaiseCanExecuteChanged();
                 DeleteRecipeTileCommand.RaiseCanExecuteChanged();
-                ChooseRecipeCommand.RaiseCanExecuteChanged();
+                Load();
             };
 
             Load();
         }
 
-
-
-
-        public void StartSelectionMode(Action<Recipe> onChosen)
+        // --------------------------------------------------------
+        // Load
+        //
+        // FUNKTION: lädt alle Rezepte des Users inkl. Zutaten aus DB
+        //
+        // RecipeService.GetAll() → SELECT recipes + recipe_ingredients
+        // Filtert auf aktuellen User (und ggf. Admin sieht alle)
+        // --------------------------------------------------------
+        private void Load()
         {
-            _recipeChosen = onChosen;
-            IsSelectionMode = true;
-        }
-
-        public void EndSelectionMode()
-        {
-            IsSelectionMode = false;
-            _recipeChosen = null;
-        }
-
-
-
-
-
-
-        private void ChooseRecipe(Recipe? recipe)
-        {
-            if (recipe == null) return;
-
-            if (IsSelectionMode)
+            if (UserSession.CurrentUserId == null)
             {
-                _recipeChosen?.Invoke(recipe);
+                Recipes = new ObservableCollection<Recipe>();
                 return;
             }
 
-            SelectedRecipe = recipe;
-        }
-
-
-
-
-
-        private void NewRecipe()
-        {
-            SelectedRecipe = null;
-            RecipeName = "";
-            Description = "";
-            Instructions = "";
-            SelectedImagePath = "";
-            Ingredients.Clear();
-            SelectedIngredient = null;
-            NewIngredientName = "";
-            NewIngredientAmount = 0;
-            SelectedIngredientUnit = "";
-            StatusMessage = "Neues Rezept.";
-        }
-
-        private bool CanAddRecipe() =>
-            UserSession.CurrentUserId != null && CanEdit && !string.IsNullOrWhiteSpace(RecipeName);
-
-        private bool CanAddIngredient() =>
-            CanEdit && !string.IsNullOrWhiteSpace(NewIngredientName);
-
-
-        public void SetPickedFoodName(string foodName)
-        {
-            NewIngredientName = foodName;
-        }
-
-
-        public void Load()
-        {
             try
             {
-                StatusMessage = "";
-                Recipes.Clear();
+                var userId = UserSession.CurrentUserId.Value;
 
-                var all = _recipeService.GetAll();
-                var userId = UserSession.CurrentUserId;
+                // RecipeService.GetAll(): lädt alle Rezepte mit Zutaten per Include()
+                var allRecipes = _recipeService.GetAll();
 
-                var filtered = userId == null || !UserSession.IsAdmin
-                    ? Enumerable.Empty<Recipe>()
-                    : all.Where(r => r.UserId == userId.Value);
+                // Admin sieht alle Rezepte, Standard-User nur seine eigenen
+                var filtered = UserSession.IsAdmin
+                    ? allRecipes
+                    : allRecipes.Where(r => r.UserId == userId).ToList();
 
-                foreach (var r in filtered.OrderByDescending(r => r.CreatedAt))
-                    Recipes.Add(r);
+                Recipes = new ObservableCollection<Recipe>(filtered);
             }
             catch (Exception ex)
             {
-                StatusMessage = "Fehler beim Laden der Rezepte: " + ex.Message;
+                StatusMessage = "Fehler beim Laden: " + ex.Message;
             }
         }
 
-
-
-
-
-
-
+        // --------------------------------------------------------
+        // AddRecipe
+        //
+        // FUNKTION:
+        //   Add wenn SelectedRecipe = null (neues Rezept)
+        //   Update wenn SelectedRecipe != null (vorhandenes Rezept bearbeiten)
+        //
+        // Zutaten werden aus CurrentIngredients-Liste übernommen.
+        // Nach Speichern: Formular leeren, Liste neu laden.
+        // --------------------------------------------------------
         private void AddRecipe()
         {
-            // Hier wird entschieden, ob ein neues Rezept angelegt
-            // oder ein bereits vorhandenes Rezept aktualisiert wird.
             try
             {
-                StatusMessage = "";
-                var userId = UserSession.CurrentUserId;
-                if (userId == null)
+                if (SelectedRecipe == null)
                 {
-                    StatusMessage = "Bitte zuerst einloggen.";
-                    return;
+                    // ── NEUES REZEPT ──────────────────────────────────────────────
+                    var recipe = new Recipe
+                    {
+                        UserId       = UserSession.CurrentUserId!.Value,
+                        Name         = RecipeName.Trim(),
+                        Description  = Description.Trim(),
+                        Instructions = Instructions.Trim(),
+                        CreatedAt    = DateTime.Now,
+                        ImagePath    = SelectedImagePath  // [NotMapped] → nur im RAM
+                    };
+
+                    // Zutaten aus der Liste dem Rezept hinzufügen
+                    // EF Core erkennt die Ingredients-Collection automatisch
+                    foreach (var ing in CurrentIngredients)
+                        recipe.Ingredients.Add(ing);
+
+                    // RecipeService.Add() → INSERT INTO recipes + recipe_ingredients
+                    _recipeService.Add(recipe);
                 }
-
-                if (SelectedRecipe != null)
+                else
                 {
+                    // ── BESTEHENDES REZEPT AKTUALISIEREN ─────────────────────────
+                    SelectedRecipe.Name         = RecipeName.Trim();
+                    SelectedRecipe.Description  = Description.Trim();
+                    SelectedRecipe.Instructions = Instructions.Trim();
+                    SelectedRecipe.ImagePath    = SelectedImagePath;
 
-                    var selectedId = SelectedRecipe.Id;
-                    SelectedRecipe.Name = RecipeName.Trim();
-                    SelectedRecipe.Description = Description ?? "";
-                    SelectedRecipe.Instructions = Instructions ?? "";
-                    SelectedRecipe.Ingredients = Ingredients.ToList();
+                    // Zutaten-Liste ersetzen (EF Core erkennt Änderungen)
+                    SelectedRecipe.Ingredients = CurrentIngredients.ToList();
+
+                    // RecipeService.Update() → UPDATE recipes + DELETE/INSERT ingredients
                     _recipeService.Update(SelectedRecipe);
-                    Load();
-                    SelectedRecipe = Recipes.FirstOrDefault(r => r.Id == selectedId);
-                    StatusMessage = "Rezept gespeichert.";
-                    return;
                 }
 
-                var recipe = new Recipe
-                {
-                    UserId = userId.Value,
-                    Name = RecipeName.Trim(),
-                    Description = Description ?? "",
-                    Instructions = Instructions ?? "",
-                    CreatedAt = DateTime.Now,
-                    Ingredients = Ingredients.ToList(),
-                    ImagePath = string.IsNullOrWhiteSpace(SelectedImagePath) ? null : SelectedImagePath
-                };
-
-                _recipeService.Add(recipe);
-                Load();
-                RecipeName = "";
-                Description = "";
-                Instructions = "";
-                SelectedImagePath = "";
-                Ingredients.Clear();
-                SelectedRecipe = null;
-                StatusMessage = "Rezept hinzugefügt.";
+                NewRecipe();  // Formular leeren
+                Load();       // Liste aktualisieren
+                StatusMessage = "";
             }
             catch (Exception ex)
             {
-                StatusMessage = "Fehler beim Hinzufügen: " + ex.Message;
+                StatusMessage = "Fehler beim Speichern: " + ex.Message;
             }
         }
 
+        // --------------------------------------------------------
+        // AddIngredient
+        //
+        // FUNKTION:
+        //   Erstellt RecipeIngredient-Objekt aus den Eingabefeldern
+        //   und fügt es zur CurrentIngredients-Liste hinzu.
+        //   Wird NOCH NICHT in DB gespeichert (erst bei AddRecipe/Update).
+        // --------------------------------------------------------
+        private void AddIngredient()
+        {
+            // Neues Zutaten-Objekt aus Formular-Daten
+            var ing = new RecipeIngredient
+            {
+                // FoodItem (C#) = food_item_name (DB) – Mapping in FoodDbContext!
+                FoodItem = NewIngredientName.Trim(),
+                Amount   = NewIngredientAmount,
+                Unit     = NewIngredientUnit.Trim()
+            };
 
+            // Zur Anzeige-Liste hinzufügen (ObservableCollection aktualisiert UI sofort)
+            CurrentIngredients.Add(ing);
+
+            // Zutaten-Eingabefelder leeren
+            NewIngredientName   = "";
+            NewIngredientAmount = 0;
+            NewIngredientUnit   = "g";
+        }
+
+        // --------------------------------------------------------
+        // RemoveIngredient
+        //
+        // FUNKTION: entfernt eine Zutat aus der CurrentIngredients-Liste
+        //   (noch keine DB-Änderung, erst bei AddRecipe/Update wirksam)
+        // --------------------------------------------------------
+        private void RemoveIngredient(RecipeIngredient? ing)
+        {
+            if (ing == null) return;
+            CurrentIngredients.Remove(ing);
+        }
+
+        // --------------------------------------------------------
+        // DeleteRecipeTile
+        //
+        // FUNKTION: löscht ein Rezept nach Bestätigung dauerhaft aus DB
+        //   ON DELETE CASCADE im SQL löscht auch recipe_ingredients + meal_plan-Einträge!
+        // --------------------------------------------------------
         private void DeleteRecipeTile(Recipe? recipe)
         {
+            if (recipe == null) return;
+
+            var result = MessageBox.Show(
+                $"Rezept '{recipe.Name}' wirklich löschen?",
+                "Löschen bestätigen",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes) return;
+
             try
             {
-                if (recipe == null) return;
-
-                var confirm = MessageBox.Show(
-                    $"Rezept '{recipe.Name}' wirklich löschen?",
-                    "Löschen bestätigen",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning);
-
-                if (confirm != MessageBoxResult.Yes)
-                    return;
-
+                // RecipeService.Delete() → DELETE FROM recipes WHERE id=?
+                // CASCADE: recipe_ingredients + meal_plan-Einträge werden mitgelöscht
                 _recipeService.Delete(recipe.Id);
-                if (SelectedRecipe?.Id == recipe.Id)
-                {
-                    SelectedRecipe = null;
-                    RecipeName = "";
-                    Description = "";
-                    Instructions = "";
-                    SelectedImagePath = "";
-                    Ingredients.Clear();
-                }
-
-                Load();
+                Load();  // Liste aktualisieren
             }
             catch (Exception ex)
             {
@@ -382,99 +419,90 @@ namespace Smartpantry.ViewModels
             }
         }
 
-
-
-
-
-        private void AddIngredient()
+        // --------------------------------------------------------
+        // NewRecipe
+        //
+        // FUNKTION: leert alle Formular-Felder für ein neues Rezept
+        //   Setzt SelectedRecipe = null → nächster "Add" erstellt neues Rezept
+        // --------------------------------------------------------
+        private void NewRecipe()
         {
-            try
+            SelectedRecipe     = null;
+            RecipeName         = "";
+            Description        = "";
+            Instructions       = "";
+            SelectedImagePath  = null;
+            // Zutaten-Liste leeren
+            CurrentIngredients = new ObservableCollection<RecipeIngredient>();
+            NewIngredientName  = "";
+            NewIngredientAmount = 0;
+            NewIngredientUnit  = "g";
+        }
+
+        // --------------------------------------------------------
+        // OpenImageDialog
+        //
+        // FUNKTION:
+        //   Öffnet einen Datei-Dialog zur Bildauswahl.
+        //   Setzt SelectedImagePath auf den gewählten Pfad.
+        //   HINWEIS: Pfad wird nur im RAM gespeichert ([NotMapped])!
+        //
+        // Quelle OpenFileDialog (Microsoft.Win32):
+        //   https://learn.microsoft.com/dotnet/api/microsoft.win32.openfiledialog
+        // --------------------------------------------------------
+        private void OpenImageDialog()
+        {
+            // OpenFileDialog: Datei-Auswahl-Dialog von Windows
+            // Quelle: https://learn.microsoft.com/dotnet/api/microsoft.win32.openfiledialog
+            var dlg = new OpenFileDialog
             {
-                StatusMessage = "";
-                if (string.IsNullOrWhiteSpace(NewIngredientName))
-                {
-                    StatusMessage = "Bitte zuerst eine Zutat auswählen oder eingeben.";
-                    return;
-                }
+                // Nur Bilddateien anzeigen
+                Filter = "Bilder|*.jpg;*.jpeg;*.png;*.bmp;*.gif",
+                Title  = "Rezeptbild auswählen"
+            };
 
-                var ingredient = new RecipeIngredient
-                {
-                    RecipeId = SelectedRecipe?.Id ?? 0,
-                    FoodItem = NewIngredientName.Trim(),
-                    Amount = NewIngredientAmount <= 0 ? 0 : NewIngredientAmount,
-                    Unit = SelectedIngredientUnit ?? ""
-                };
-
-                Ingredients.Add(ingredient);
-
-                if (SelectedRecipe != null)
-                {
-                    SelectedRecipe.Ingredients = Ingredients.ToList();
-                    _recipeService.Update(SelectedRecipe);
-                    var selectedId = SelectedRecipe.Id;
-                    Load();
-                    SelectedRecipe = Recipes.FirstOrDefault(r => r.Id == selectedId);
-                }
-
-                NewIngredientName = "";
-                NewIngredientAmount = 0;
-                SelectedIngredientUnit = "";
-                StatusMessage = "Zutat hinzugefügt.";
-            }
-            catch (Exception ex)
+            // ShowDialog(): blockiert bis User Auswahl bestätigt oder abbricht
+            // "?? false" = wenn ShowDialog null zurückgibt → false
+            if (dlg.ShowDialog() ?? false)
             {
-                StatusMessage = "Fehler beim Hinzufügen der Zutat: " + ex.Message;
+                // Pfad des gewählten Bildes speichern
+                SelectedImagePath = dlg.FileName;
             }
         }
 
-        private void RemoveIngredient()
+        // --------------------------------------------------------
+        // SetPickedFoodName
+        //
+        // FUNKTION:
+        //   Wird von MainViewModel aufgerufen nachdem User ein FoodItem
+        //   im FoodView-Auswahlmodus gewählt hat.
+        //   Trägt den Food-Namen in das Zutaten-Eingabefeld ein.
+        //
+        // PARAMETER: name → Name des gewählten FoodItems
+        // --------------------------------------------------------
+        public void SetPickedFoodName(string name)
         {
-            try
-            {
-                if (SelectedIngredient == null) return;
-
-                var removed = SelectedIngredient;
-                Ingredients.Remove(removed);
-                SelectedIngredient = null;
-
-                if (SelectedRecipe != null)
-                {
-                    SelectedRecipe.Ingredients = Ingredients.ToList();
-                    _recipeService.Update(SelectedRecipe);
-                    var selectedId = SelectedRecipe.Id;
-                    Load();
-                    SelectedRecipe = Recipes.FirstOrDefault(r => r.Id == selectedId);
-                }
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = "Fehler beim Entfernen: " + ex.Message;
-            }
+            // Name ins Zutaten-Namensfeld übertragen
+            NewIngredientName = name;
         }
 
-
-        private void PickImage()
+        // --------------------------------------------------------
+        // StartSelectionMode / EndSelectionMode
+        //
+        // Auswahlmodus für MealPlanViewModel:
+        // Wenn IsSelectionMode=true → jeder Klick auf Rezept ruft _recipeChosen auf
+        // --------------------------------------------------------
+        public void StartSelectionMode(Action<Recipe> onChosen)
         {
-            try
-            {
-                var dlg = new OpenFileDialog
-                {
-                    Title = "Bild auswählen",
-                    Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp;*.gif",
-                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
-                };
+            _recipeChosen   = onChosen;
+            IsSelectionMode = true;
+        }
 
-                if (dlg.ShowDialog() == true)
-                {
-                    SelectedImagePath = dlg.FileName;
-                    if (SelectedRecipe != null) SelectedRecipe.ImagePath = dlg.FileName;
-                    StatusMessage = "Bild ausgewählt.";
-                }
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = "Fehler beim Bild-Auswählen: " + ex.Message;
-            }
+        public void EndSelectionMode()
+        {
+            _recipeChosen   = null;
+            IsSelectionMode = false;
+            SelectedRecipe  = null;
         }
     }
 }

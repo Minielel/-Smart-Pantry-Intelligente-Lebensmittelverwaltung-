@@ -13,32 +13,43 @@ Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewMod
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <!-- Das Haupt-Grid teilt die Seite in einen Titelbereich (Auto) und den Inhalt (*). -->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <!-- Seitentitel – Text kommt aus der Sprachdatei (DynamicResource). -->
         <TextBlock Text="{DynamicResource Nav_Dashboard}" FontSize="34" FontWeight="SemiBold" Margin="0,0,0,16"/>
 
+        <!-- Inhalt der Seite: Kacheln + Refresh-Button + Statusmeldung. -->
         <StackPanel Grid.Row="1">
+
+            <!-- WrapPanel: Kacheln umbrechen automatisch bei zu wenig Platz. -->
             <WrapPanel>
+
+                <!-- Kachel 1: Gesamtanzahl der Lebensmittel im Lager. -->
                 <Border Style="{StaticResource CardBorderStyle}" Width="210" Height="140">
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="{DynamicResource Dash_Items}" FontSize="18" FontWeight="SemiBold"/>
+                        <!-- Binding auf TotalFoodItems im DashboardViewModel. -->
                         <TextBlock Text="{Binding TotalFoodItems}" FontSize="46" FontWeight="SemiBold" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
 
-	                
-	                <Border Width="210" Height="140">
+                <!-- Kachel 2: Bald ablaufende Lebensmittel – Hintergrund aendert sich je nach ExpiryAlertLevel. -->
+                <Border Width="210" Height="140">
                     <Border.Style>
                         <Style TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
+                            <!-- Standardfarbe aus dem Theme. -->
                             <Setter Property="Background" Value="{DynamicResource Surface2Brush}"/>
                             <Style.Triggers>
+                                <!-- Gelb: Einige Produkte laufen bald ab. -->
                                 <DataTrigger Binding="{Binding ExpiryAlertLevel}" Value="Soon">
                                     <Setter Property="Background" Value="#FFF3D57A"/>
                                 </DataTrigger>
+                                <!-- Rot: Produkte sind bereits abgelaufen. -->
                                 <DataTrigger Binding="{Binding ExpiryAlertLevel}" Value="Expired">
                                     <Setter Property="Background" Value="#FFF09A9A"/>
                                 </DataTrigger>
@@ -47,30 +58,36 @@ Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewMod
                     </Border.Style>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="{DynamicResource Dash_Expiring}" FontSize="18" FontWeight="SemiBold"/>
+                        <!-- Binding auf ExpiringSoon im DashboardViewModel. -->
                         <TextBlock Text="{Binding ExpiringSoon}" FontSize="46" FontWeight="SemiBold" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
 
+                <!-- Kachel 3: Gesamtanzahl der gespeicherten Rezepte. -->
                 <Border Style="{StaticResource CardBorderStyle}" Width="210" Height="140">
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="{DynamicResource Dash_Recipes}" FontSize="18" FontWeight="SemiBold"/>
+                        <!-- Binding auf TotalRecipes im DashboardViewModel. -->
                         <TextBlock Text="{Binding TotalRecipes}" FontSize="46" FontWeight="SemiBold" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
 
+                <!-- Kachel 4: Nachzukaufende Artikel (aktuell an ExpiringSoon gebunden). -->
                 <Border Style="{StaticResource CardBorderStyle}" Width="210" Height="140">
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="{DynamicResource Dash_Restock}" FontSize="18" FontWeight="SemiBold"/>
-                        
+                        <!-- Hinweis: Hier wird ExpiringSoon angezeigt – ggf. durch ShoppingList-Zahl ersetzen. -->
                         <TextBlock Text="{Binding ExpiringSoon}" FontSize="46" FontWeight="SemiBold" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
             </WrapPanel>
 
+            <!-- Refresh-Button ruft RefreshCommand im DashboardViewModel auf. -->
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                 <Button Style="{StaticResource SecondaryButtonStyle}" Content="{DynamicResource Btn_Refresh}" Command="{Binding RefreshCommand}" MinWidth="140"/>
             </StackPanel>
 
+            <!-- Statusmeldung (z.B. "Zuletzt aktualisiert um ...") aus dem ViewModel. -->
             <TextBlock Text="{Binding StatusMessage}" Margin="0,12,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}"/>
         </StackPanel>
     </Grid>
