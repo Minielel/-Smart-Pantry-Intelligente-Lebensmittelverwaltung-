@@ -1,65 +1,18 @@
 <!--
-====================================================================
-Datei:   Theme.Orange.xaml
-Schicht: Ressourcen / Theme
+Datei: Theme.Orange.xaml
 
-ZWECK:
-  Oranges / warmes Theme als dritte Farbvariante.
-  Warme Töne, die gut zu Lebensmitteln / Herbst-Ästhetik passen.
+Beschreibung:
+Diese XAML-Datei enthaelt Ressourcen wie Farben, Texte oder Styles. Damit kann das Aussehen der App zentral angepasst werden.
 
-ROTER FADEN:
-  Gleicher Ablauf wie die anderen Themes:
-  SettingsViewModel.SetTheme("orange")
-    → ApplyThemeResources("orange")
-      → ResourceSwapService.SwapMergedDictionary("Theme.", Theme.Orange.xaml)
-        → diese Datei ersetzt Theme.Green.xaml oder Theme.Blue.xaml
-          → alle DynamicResource AccentBrush-Bindings zeigen jetzt Orange
-
-FARBKONZEPT:
-  AccentColor  #F59E0B → Amber/Orange (Tailwind Amber-500) → Buttons, Highlights
-  SidebarColor #92400E → Dunkles Braun-Orange (Tailwind Amber-900) → Sidebar-Hintergrund
-
-VERWENDETE QUELLEN:
-  WPF ResourceDictionary:
-    https://learn.microsoft.com/dotnet/desktop/wpf/systems/xaml-resources-overview
-  SolidColorBrush:
-    https://learn.microsoft.com/dotnet/api/system.windows.media.solidcolorbrush
-  Color-Struktur:
-    https://learn.microsoft.com/dotnet/api/system.windows.media.color
-  x:Key-Attribut:
-    https://learn.microsoft.com/dotnet/desktop/wpf/xaml/xkey-directive
-====================================================================
+Hinweis fuer die Vorstellung:
+Wenn man diese Datei erklaert, kann man sagen, dass XAML nur fuer den sichtbaren
+Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewModel.
 -->
 
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-
-  <!--
-    AccentColor: Warmes Amber/Orange als Hauptakzentfarbe.
-    #F59E0B = Tailwind Amber-500: lebhaft, warm, gut lesbar auf weißem Hintergrund.
-    GLEICHER KEY wie in den anderen Themes → Theme-Wechsel ohne Code-Änderungen möglich.
-    Quelle: https://learn.microsoft.com/dotnet/api/system.windows.media.color
-  -->
   <Color x:Key="AccentColor">#F59E0B</Color>
-
-  <!--
-    AccentBrush: Brush-Wrapper für AccentColor.
-    Verwendung: Background="{DynamicResource AccentBrush}"
-    → alle Buttons + aktive Navigationselemente werden orange
-    Quelle: https://learn.microsoft.com/dotnet/api/system.windows.media.solidcolorbrush
-  -->
   <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
-
-  <!--
-    SidebarColor: Dunkles Braun-Orange für die Sidebar.
-    #92400E = Tailwind Amber-900: ausreichend dunkel für weißen Text darauf.
-  -->
   <Color x:Key="SidebarColor">#92400E</Color>
-
-  <!--
-    SidebarBrush: Brush-Wrapper für SidebarColor.
-    Verwendung: Background="{DynamicResource SidebarBrush}" in MainWindow.xaml Sidebar.
-  -->
   <SolidColorBrush x:Key="SidebarBrush" Color="{StaticResource SidebarColor}"/>
-
 </ResourceDictionary>

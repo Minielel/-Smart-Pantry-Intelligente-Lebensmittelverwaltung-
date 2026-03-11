@@ -1,50 +1,14 @@
-// ============================================================
-// Datei:   ShoppingListViewModel.cs
-// Schicht: ViewModel / Einkaufsliste
+// ------------------------------------------------------------
+// Datei: ShoppingListViewModel.cs
 //
-// ZWECK:
-//   Verwaltet die Einkaufsliste. Ruft bei jedem Load() automatisch
-//   die Low-Stock-Erkennung auf (UpsertLowStockFromFood).
-//   Ermöglicht den Transfer von eingekauften Items in den Vorrat.
+// Beschreibung:
+// Diese Datei gehört zur Logik der Benutzeroberfläche. In einem ViewModel werden Eingaben verarbeitet, Daten vorbereitet und Befehle für Buttons bereitgestellt.
 //
-// ROTER FADEN:
-//   ShoppingListView.xaml ←→ ShoppingListViewModel
-//   ←→ ShoppingService ←→ DB: shopping_list + food_items
-//
-//   AUTOMATISCHE LOW-STOCK-ERKENNUNG:
-//   Bei jedem Load() → ShoppingService.UpsertLowStockFromFood(userId)
-//   → Vorrat wird analysiert (Schwellenwerte je nach Einheit)
-//   → Items mit niedrigem Bestand die noch nicht auf der Liste sind
-//     werden automatisch hinzugefügt
-//
-//   "ZU FOOD" WORKFLOW:
-//   User wählt ExpiryDate (DatePicker in Seitenleiste)
-//   User klickt "Zu Food" Checkbox bei einem Shopping-Item
-//   → AddToFoodCommand(item) → ShoppingService.MoveToFoodAndRemove()
-//   → Transaktion: Item → food_items, Item aus shopping_list gelöscht
-//   → FoodService.RaiseFoodChanged() → FoodView + Dashboard aktualisieren
-//
-//   FoodService.FoodChanged → Load()
-//   → wenn Vorrat sich ändert, Low-Stock neu prüfen
-//
-// USER USECASE:
-//   Admin öffnet Einkaufsliste
-//   → automatisch: Artikel mit niedrigem Bestand erscheinen als Vorschläge
-//   → manuell: Name + Menge + Einheit eingeben → "Hinzufügen"
-//   → nach dem Einkauf: Ablaufdatum im DatePicker wählen
-//   → "Zu Food" Checkbox → Item landet im Vorrat
-//
-// QUELLEN:
-//   ObservableCollection<T>:
-//   https://learn.microsoft.com/dotnet/api/system.collections.objectmodel.observablecollection-1
-//
-//   EF Core Transactions (in ShoppingService.MoveToFoodAndRemove):
-//   https://learn.microsoft.com/ef/core/saving/transactions
-//
-//   RelayCommand<T> (typisierter Command für Shopping-Items):
-//   Siehe RelayCommandT.cs in diesem Projekt
-// ============================================================
-
+// Hinweis fuer die Vorstellung:
+// Wenn man diese Datei in der Schule erklaeren moechte, kann man sagen,
+// dass sie einen bestimmten Baustein der App uebernimmt und dadurch hilft,
+// die Anwendung klar zu strukturieren.
+// ------------------------------------------------------------
 using Smartpantry.Helpers;
 using Smartpantry.Models;
 using SmartPantry2.Services;
@@ -54,185 +18,179 @@ using System.Linq;
 
 namespace Smartpantry.ViewModels
 {
+
+
     public class ShoppingListViewModel : BaseViewModel
     {
-        // ShoppingService: alle DB-Operationen für die Einkaufsliste
+        // Dieses ViewModel ist fuer die Einkaufsliste zustaendig.
+        // Es sammelt Eintraege, uebernimmt sie spaeter in den Vorrat und aktualisiert die Anzeige.
         private readonly ShoppingService _shoppingService = new ShoppingService();
+        private readonly FoodService _foodService = new FoodService();
 
-        // ── EINKAUFSLISTE ─────────────────────────────────────────────────────────
-        // ObservableCollection: WPF reagiert sofort auf Add/Remove
-        private ObservableCollection<ShoppingItem> _items = new();
-        public ObservableCollection<ShoppingItem> Items
-        {
-            get => _items;
-            private set => SetProperty(ref _items, value);
-        }
 
-        // ── ABLAUFDATUM FÜR "ZU FOOD" TRANSFER ───────────────────────────────────
-        // User wählt dieses Datum per DatePicker bevor er "Zu Food" klickt.
-        // Wird als ExpiryDate des neuen FoodItems verwendet.
-        private DateTime _expiryDateForFood = DateTime.Today.AddDays(7);
-        public DateTime ExpiryDateForFood
-        {
-            get => _expiryDateForFood;
-            set => SetProperty(ref _expiryDateForFood, value);
-        }
+        public ObservableCollection<ShoppingItem> Items { get; } = new ObservableCollection<ShoppingItem>();
 
-        // ── FORMULAR-FELDER (manuelle Eingabe) ────────────────────────────────────
-        private string _newName = "";
-        // Name des einzukaufenden Artikels → DB-Spalte "name"
-        public string NewName
+
+        public bool CanEdit => UserSession.IsAdmin;
+
+        private ShoppingItem? _selectedItem;
+        public ShoppingItem? SelectedItem
         {
-            get => _newName;
+            get => _selectedItem;
             set
             {
-                if (SetProperty(ref _newName, value))
+                if (SetProperty(ref _selectedItem, value))
+                {
+                    if (value != null)
+                        MoveToFoodExpiryDate = DateTime.Today.AddDays(7);
+                }
+            }
+        }
+
+        private string _name = "";
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                if (SetProperty(ref _name, value))
                     AddCommand.RaiseCanExecuteChanged();
             }
         }
 
-        private decimal _newAmount;
-        // Menge → DB-Spalte "amount"
-        public decimal NewAmount
-        {
-            get => _newAmount;
-            set => SetProperty(ref _newAmount, value);
-        }
+        private decimal _amount = 1;
+        public decimal Amount { get => _amount; set => SetProperty(ref _amount, value); }
 
-        private string _newUnit = "g";
-        // Einheit → DB-Spalte "unit"
-        public string NewUnit
-        {
-            get => _newUnit;
-            set => SetProperty(ref _newUnit, value);
-        }
-
-        // ── BERECHTIGUNGEN ────────────────────────────────────────────────────────
-        // Nur Admins dürfen hinzufügen, löschen und zu Food übernehmen
-        public bool CanEdit => UserSession.IsAdmin;
+        private string _unit = "";
+        public string Unit { get => _unit; set => SetProperty(ref _unit, value); }
 
         private string _statusMessage = "";
-        public string StatusMessage
+        public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
+
+
+
+        private DateTime _moveToFoodExpiryDate = DateTime.Today.AddDays(7);
+        public DateTime MoveToFoodExpiryDate
         {
-            get => _statusMessage;
-            set => SetProperty(ref _statusMessage, value);
+            get => _moveToFoodExpiryDate;
+            set => SetProperty(ref _moveToFoodExpiryDate, value);
         }
 
-        // ── COMMANDS ──────────────────────────────────────────────────────────────
-        // Manuelles Hinzufügen eines Shopping-Items
+        public RelayCommand LoadCommand { get; }
         public RelayCommand AddCommand { get; }
-
-        // "Zu Food" Checkbox: überträgt Item in den Vorrat
-        // RelayCommand<ShoppingItem>: das konkrete Item wird als Parameter übergeben
+        public RelayCommand<ShoppingItem> DeleteItemCommand { get; }
         public RelayCommand<ShoppingItem> AddToFoodCommand { get; }
 
-        // "×"-Button: löscht ein Shopping-Item dauerhaft
-        public RelayCommand<ShoppingItem> DeleteItemCommand { get; }
+        public ObservableCollection<string> Units { get; } = new ObservableCollection<string>
+        {
+            "g",
+            "ml",
+            "Stück"
+        };
+
+        private string _selectedUnit = "g";
+        public string SelectedUnit
+        {
+            get => _selectedUnit;
+            set
+            {
+                if (SetProperty(ref _selectedUnit, value))
+                    Unit = value;
+            }
+        }
+
+
+
 
         public ShoppingListViewModel()
         {
-            AddCommand = new RelayCommand(Add, () => CanEdit && !string.IsNullOrWhiteSpace(NewName));
+            LoadCommand = new RelayCommand(Load);
+            AddCommand = new RelayCommand(Add, CanAdd);
+            DeleteItemCommand = new RelayCommand<ShoppingItem>(DeleteItem, item => CanEdit && item != null);
+            AddToFoodCommand = new RelayCommand<ShoppingItem>(AddToFood, item => CanEdit && item != null);
 
-            AddToFoodCommand = new RelayCommand<ShoppingItem>(
-                AddToFood,
-                // Aktiv wenn Admin UND Item nicht null UND noch nicht übernommen
-                item => CanEdit && item != null && !item.IsBought);
-
-            DeleteItemCommand = new RelayCommand<ShoppingItem>(
-                DeleteItem,
-                item => CanEdit && item != null);
-
-            // Bei Login/Logout neu laden
             UserSession.CurrentUserChanged += () =>
             {
+                ClearForm();
+                Load();
                 OnPropertyChanged(nameof(CanEdit));
                 AddCommand.RaiseCanExecuteChanged();
-                Load();
+                DeleteItemCommand.RaiseCanExecuteChanged();
+                AddToFoodCommand.RaiseCanExecuteChanged();
             };
 
-            // FoodService.FoodChanged → Low-Stock neu prüfen + Liste neu laden
-            // Wenn jemand im FoodView ein Item löscht → könnte Low-Stock entstehen
-            FoodService.FoodChanged += Load;
 
+            FoodService.FoodChanged += () => Load();
+
+
+            Unit = SelectedUnit;
             Load();
         }
 
-        // --------------------------------------------------------
-        // Load
-        //
-        // FUNKTION:
-        //   1. UpsertLowStockFromFood(): Vorrat analysieren, Vorschläge erstellen
-        //   2. Alle Shopping-Items aus DB laden und anzeigen
-        //
-        // AUFGERUFEN VON:
-        //   Konstruktor (einmalig beim Start)
-        //   UserSession.CurrentUserChanged (bei Login/Logout)
-        //   FoodService.FoodChanged (nach jeder Vorrats-Änderung)
-        // --------------------------------------------------------
+        private bool CanAdd() =>
+            UserSession.CurrentUserId != null && CanEdit && !string.IsNullOrWhiteSpace(Name);
+
+
+
+
         public void Load()
         {
-            if (UserSession.CurrentUserId == null)
-            {
-                Items = new ObservableCollection<ShoppingItem>();
-                return;
-            }
-
             try
             {
-                var userId = UserSession.CurrentUserId.Value;
+                StatusMessage = "";
+                Items.Clear();
 
-                // Schritt 1: Vorrat analysieren → Niedrig-Bestand-Items automatisch hinzufügen
-                // UpsertLowStockFromFood schreibt direkt in die DB (kein Duplikat wenn schon drauf)
-                _shoppingService.UpsertLowStockFromFood(userId);
+                var userId = UserSession.CurrentUserId;
+                if (userId == null) return;
 
-                // Schritt 2: aktuelle Einkaufsliste aus DB laden
-                // Nur nicht-gekaufte Items anzeigen (IsBought=false)
-                // (Gekaufte Items wurden bereits zu Food übernommen und gelöscht)
-                var allItems = _shoppingService.GetAll(userId)
-                    .Where(s => !s.IsBought)
-                    .OrderBy(s => s.Name)
-                    .ToList();
 
-                Items = new ObservableCollection<ShoppingItem>(allItems);
+
+
+                _shoppingService.UpsertLowStockFromFood(userId.Value);
+
+                var list = _shoppingService.GetAll(userId.Value)
+                    .OrderBy(i => i.IsBought)
+                    .ThenBy(i => i.Name);
+
+                foreach (var item in list)
+                    Items.Add(item);
             }
             catch (Exception ex)
             {
-                StatusMessage = "Fehler beim Laden: " + ex.Message;
+                StatusMessage = "Fehler beim Laden der Einkaufsliste: " + ex.Message;
             }
         }
 
-        // --------------------------------------------------------
-        // Add
-        //
-        // FUNKTION:
-        //   Fügt manuell ein neues Shopping-Item hinzu.
-        //   ShoppingService.AddOrMerge() verhindert Duplikate.
-        //
-        // DB: INSERT INTO shopping_list (...) ODER UPDATE ... SET amount+=?
-        // --------------------------------------------------------
+
+
         private void Add()
         {
+            // Hier wird ein neuer Eintrag in die Einkaufsliste uebernommen.
+            // Danach wird die Liste neu geladen, damit man den Eintrag sofort sieht.
             try
             {
+                StatusMessage = "";
+                var userId = UserSession.CurrentUserId;
+                if (userId == null)
+                {
+                    StatusMessage = "Bitte zuerst einloggen.";
+                    return;
+                }
+
                 var item = new ShoppingItem
                 {
-                    UserId   = UserSession.CurrentUserId!.Value,
-                    Name     = NewName.Trim(),
-                    Amount   = NewAmount,
-                    Unit     = NewUnit.Trim(),
-                    IsBought = false  // noch nicht eingekauft
+                    UserId = userId.Value,
+                    Name = Name.Trim(),
+                    Amount = Amount,
+                    Unit = (SelectedUnit ?? Unit)?.Trim() ?? "",
+                    IsBought = false
                 };
 
-                // AddOrMerge: wenn Name+Einheit schon auf der Liste → Menge aufaddieren
                 _shoppingService.AddOrMerge(item);
-
-                // Formular leeren
-                NewName   = "";
-                NewAmount = 0;
-                NewUnit   = "g";
-
-                // Liste aktualisieren
                 Load();
+                ClearForm();
+                StatusMessage = "Einkaufsitem hinzugefügt.";
+                MoveToFoodExpiryDate = DateTime.Today.AddDays(7);
             }
             catch (Exception ex)
             {
@@ -240,71 +198,58 @@ namespace Smartpantry.ViewModels
             }
         }
 
-        // --------------------------------------------------------
-        // AddToFood
-        //
-        // FUNKTION:
-        //   Kernfunktion: überträgt ein eingekauftes Item in den Vorrat.
-        //   ExpiryDateForFood (aus DatePicker) wird als Ablaufdatum verwendet.
-        //
-        // FLOW:
-        //   ShoppingService.MoveToFoodAndRemove()
-        //   → INSERT INTO food_items (..., expiration_date=ExpiryDateForFood)
-        //      ODER UPDATE food_items SET amount += ? (wenn schon vorhanden)
-        //   → DELETE FROM shopping_list WHERE id=?
-        //   → COMMIT (Transaktion: alles oder nichts)
-        //   → FoodService.RaiseFoodChanged()
-        //     → FoodView + DashboardView aktualisieren
-        //     → ShoppingListView neu laden (dieses Item verschwindet)
-        //
-        // AUFGERUFEN VON: AddToFoodCommand (RelayCommand<ShoppingItem>)
-        //   In ShoppingListView.xaml:
-        //     Command="{Binding DataContext.AddToFoodCommand,
-        //               RelativeSource={RelativeSource AncestorType=ListBox}}"
-        //     CommandParameter="{Binding}"
-        // --------------------------------------------------------
-        private void AddToFood(ShoppingItem? item)
-        {
-            if (item == null) return;
 
-            try
-            {
-                // ShoppingService übernimmt den kompletten Transfer inkl. Transaktion
-                // ExpiryDateForFood: das Ablaufdatum das User im DatePicker gewählt hat
-                _shoppingService.MoveToFoodAndRemove(
-                    UserSession.CurrentUserId!.Value,
-                    item.Id,
-                    ExpiryDateForFood);
 
-                // FoodService.RaiseFoodChanged() → Load() wird automatisch aufgerufen
-                // (kein manuelles Load() nötig, da FoodChanged abonniert)
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = "Fehler beim Transfer: " + ex.Message;
-            }
-        }
-
-        // --------------------------------------------------------
-        // DeleteItem
-        //
-        // FUNKTION: löscht ein Shopping-Item dauerhaft aus der Liste
-        //
-        // DB: DELETE FROM shopping_list WHERE id=?
-        // --------------------------------------------------------
         private void DeleteItem(ShoppingItem? item)
         {
-            if (item == null) return;
-
             try
             {
-                // ShoppingService.Delete() → DELETE FROM shopping_list WHERE id=?
+                if (item == null) return;
+                StatusMessage = "";
+
                 _shoppingService.Delete(item.Id);
-                Load();  // Liste aktualisieren
+                Load();
+
+                if (SelectedItem?.Id == item.Id)
+                    SelectedItem = null;
+
+                StatusMessage = "Eintrag gelöscht.";
             }
             catch (Exception ex)
             {
                 StatusMessage = "Fehler beim Löschen: " + ex.Message;
+            }
+        }
+
+        private void ClearForm()
+        {
+            Name = "";
+            Amount = 1;
+            SelectedUnit = Units.FirstOrDefault() ?? "g";
+            Unit = SelectedUnit;
+            SelectedItem = null;
+        }
+
+
+
+
+        private void AddToFood(ShoppingItem? item)
+        {
+            try
+            {
+                if (item == null) return;
+                var userId = UserSession.CurrentUserId;
+                if (userId == null) return;
+
+                StatusMessage = "";
+                _shoppingService.MoveToFoodAndRemove(userId.Value, item.Id, MoveToFoodExpiryDate.Date);
+                Load();
+                SelectedItem = null;
+                StatusMessage = "Zu Food hinzugefügt.";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = "Fehler beim Übernehmen: " + ex.Message;
             }
         }
     }

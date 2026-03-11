@@ -1,70 +1,18 @@
 <!--
-====================================================================
-Datei:   Theme.Green.xaml
-Schicht: Ressourcen / Theme
+Datei: Theme.Green.xaml
 
-ZWECK:
-  Standard-Theme der App (wird beim ersten Login geladen).
-  Grüne Farbtöne passend zum "SmartPantry" / Lebensmittel-Kontext.
+Beschreibung:
+Diese XAML-Datei enthaelt Ressourcen wie Farben, Texte oder Styles. Damit kann das Aussehen der App zentral angepasst werden.
 
-ROTER FADEN:
-  AuthService.Register() → UserSettings.Theme = "green" (Standard)
-  AuthService.Login() → lädt UserSettings per Include()
-  SettingsViewModel.Load() → ApplyThemeResources("green")
-    → ResourceSwapService.SwapMergedDictionary("Theme.", Theme.Green.xaml)
-      → diese Datei ersetzt das aktive Theme-Dictionary
-
-ZUSAMMENSPIEL MIT ANDEREN THEMES:
-  Alle drei Theme-Dateien definieren DIESELBEN x:Key-Namen:
-    AccentColor, AccentBrush, SidebarColor, SidebarBrush
-  → der Code referenziert immer {DynamicResource AccentBrush}
-  → nur die aktive Theme-Datei bestimmt welche Farbe das ist
-  → Theme wechseln = Dictionary austauschen → alle Farben sofort anders
-
-VERWENDETE QUELLEN:
-  WPF ResourceDictionary:
-    https://learn.microsoft.com/dotnet/desktop/wpf/systems/xaml-resources-overview
-  SolidColorBrush:
-    https://learn.microsoft.com/dotnet/api/system.windows.media.solidcolorbrush
-  Color-Struktur:
-    https://learn.microsoft.com/dotnet/api/system.windows.media.color
-  x:Key-Attribut:
-    https://learn.microsoft.com/dotnet/desktop/wpf/xaml/xkey-directive
-====================================================================
+Hinweis fuer die Vorstellung:
+Wenn man diese Datei erklaert, kann man sagen, dass XAML nur fuer den sichtbaren
+Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewModel.
 -->
 
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-
-  <!--
-    AccentColor: Hauptakzentfarbe des grünen Themes.
-    Helles Grün (ähnlich Tailwind Green-400/500).
-    Wird verwendet für: Buttons, aktive Sidebar-Elemente, Highlights.
-    GLEICHER KEY wie in Theme.Blue.xaml und Theme.Orange.xaml
-    → DynamicResource-Bindings in Views müssen nicht geändert werden beim Theme-Wechsel!
-    Quelle: https://learn.microsoft.com/dotnet/api/system.windows.media.color
-  -->
   <Color x:Key="AccentColor">#7BCB4E</Color>
-
-  <!--
-    AccentBrush: Brush-Wrapper für AccentColor.
-    Verwendung in XAML: Background="{DynamicResource AccentBrush}"
-    oder Foreground="{DynamicResource AccentBrush}"
-    Quelle: https://learn.microsoft.com/dotnet/api/system.windows.media.solidcolorbrush
-  -->
   <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
-
-  <!--
-    SidebarColor: Dunkles Grün für die Navigationsleiste.
-    Guter Kontrast zu weißem/hellem Seiteninhalt.
-    Tailwind Green-800-ähnlicher Ton.
-  -->
   <Color x:Key="SidebarColor">#2F6E1F</Color>
-
-  <!--
-    SidebarBrush: Brush-Wrapper für SidebarColor.
-    Verwendung: Background="{DynamicResource SidebarBrush}" in MainWindow.xaml.
-  -->
   <SolidColorBrush x:Key="SidebarBrush" Color="{StaticResource SidebarColor}"/>
-
 </ResourceDictionary>

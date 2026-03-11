@@ -13,17 +13,14 @@ Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewMod
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Haupt-Grid: Zeile 0 = Titel, Zeile 1 = Inhalt. -->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Seitentitel – Text kommt aus der Sprachdatei (DynamicResource). -->
         <TextBlock Text="{DynamicResource Title_Plan}" FontSize="34" FontWeight="SemiBold" Margin="0,0,0,16"/>
 
-        <!-- Inhalts-Grid: Spalte 0 = Wochenplan-Liste, Spalte 2 = Eintrag-hinzufuegen-Formular. -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -31,40 +28,33 @@ Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewMod
                 <ColumnDefinition Width="360"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Linke Karte: Anzeige des aktuellen Wochenplans. -->
+            
             <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}" Margin="0">
                 <StackPanel>
-                    <!-- Pill-Header mit Ueberschrift. -->
                     <Border Style="{StaticResource PillHeaderBorderStyle}" Margin="0,0,0,14">
                         <TextBlock Style="{StaticResource PillHeaderTextStyle}" Text="{DynamicResource Plan_Week}"/>
                     </Border>
 
-                    <!-- Liste der Wochenplan-Eintraege; Datenquelle ist Plans aus dem MealPlanViewModel. -->
-                    <ListBox ItemsSource="{Binding Plans}" SelectedItem="{Binding SelectedPlan}" BorderThickness="0" Background="Transparent">
-                        <!-- DataTemplate: So sieht ein einzelner Planeintrag aus. -->
-                        <ListBox.ItemTemplate>
+                    <!-- Diese Liste zeigt den aktuellen Plan mit den ausgewaehlten Rezepten. -->
+<ListBox ItemsSource="{Binding Plans}" SelectedItem="{Binding SelectedPlan}" BorderThickness="0" Background="Transparent">
+                        <!-- Diese Liste zeigt den aktuellen Plan mit den ausgewaehlten Rezepten. -->
+<ListBox.ItemTemplate>
                             <DataTemplate>
-                                <!-- Karte pro Eintrag: zeigt Datum, Mahlzeit-Typ und Rezeptname. -->
                                 <Border Background="{DynamicResource Surface2Brush}" CornerRadius="14" Padding="12" Margin="0,0,0,10">
                                     <StackPanel>
-                                        <!-- Datum formatiert als "Mo, 12.05". -->
-                                        <TextBlock Text="{Binding Date, StringFormat={}{0:ddd, dd.MM}}" FontWeight="SemiBold"/>
-
-                                        <!-- Mahlzeit-Typ: Englische DB-Werte werden auf Deutsche Texte gemappt. -->
+	                                        
+	                                        <TextBlock Text="{Binding Date, StringFormat={}{0:ddd, dd.MM}}" FontWeight="SemiBold"/>
                                         <TextBlock Foreground="{DynamicResource MutedTextBrush}">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Text" Value="{Binding MealType}"/>
                                                     <Style.Triggers>
-                                                        <!-- "breakfast" → "Morgens" -->
                                                         <DataTrigger Binding="{Binding MealType}" Value="breakfast">
                                                             <Setter Property="Text" Value="Morgens"/>
                                                         </DataTrigger>
-                                                        <!-- "lunch" → "Mittags" -->
                                                         <DataTrigger Binding="{Binding MealType}" Value="lunch">
                                                             <Setter Property="Text" Value="Mittags"/>
                                                         </DataTrigger>
-                                                        <!-- "dinner" → "Abends" -->
                                                         <DataTrigger Binding="{Binding MealType}" Value="dinner">
                                                             <Setter Property="Text" Value="Abends"/>
                                                         </DataTrigger>
@@ -72,8 +62,6 @@ Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewMod
                                                 </Style>
                                             </TextBlock.Style>
                                         </TextBlock>
-
-                                        <!-- Name des verknuepften Rezepts (Navigation Property). -->
                                         <TextBlock Text="{Binding Recipe.Name}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11"/>
                                     </StackPanel>
                                 </Border>
@@ -81,13 +69,11 @@ Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewMod
                         </ListBox.ItemTemplate>
                     </ListBox>
 
-                    <!-- Eintrag-loeschen-Button; nur sichtbar fuer berechtigte Benutzer. -->
                     <Button Content="{DynamicResource Btn_DeleteEntry}" Command="{Binding RemovePlanCommand}">
                         <Button.Style>
                             <Style TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
                                 <Setter Property="Visibility" Value="Visible"/>
                                 <Style.Triggers>
-                                    <!-- Ausgeblendet wenn der Benutzer kein Bearbeitungsrecht hat. -->
                                     <DataTrigger Binding="{Binding CanEdit}" Value="False">
                                         <Setter Property="Visibility" Value="Collapsed"/>
                                     </DataTrigger>
@@ -98,14 +84,12 @@ Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewMod
                 </StackPanel>
             </Border>
 
-            <!-- Rechte Karte: Formular zum Hinzufuegen eines neuen Planeintrags. -->
-            <!-- Nur sichtbar wenn CanEdit = True. -->
+            
             <Border Grid.Column="2">
                 <Border.Style>
                     <Style TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
                         <Setter Property="Visibility" Value="Visible"/>
                         <Style.Triggers>
-                            <!-- Formular ausblenden wenn kein Bearbeitungsrecht. -->
                             <DataTrigger Binding="{Binding CanEdit}" Value="False">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
@@ -113,29 +97,22 @@ Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewMod
                     </Style>
                 </Border.Style>
                 <StackPanel>
-                    <!-- Pill-Header fuer das Hinzufuegen-Formular. -->
                     <Border Style="{StaticResource PillHeaderBorderStyle}" Margin="0,0,0,14">
                         <TextBlock Style="{StaticResource PillHeaderTextStyle}" Text="{DynamicResource Plan_AddHeader}"/>
                     </Border>
 
-                    <!-- Rezept-Auswahl: Button oeffnet Auswahl-Dialog via PickRecipeCommand. -->
                     <TextBlock Text="{DynamicResource Plan_Recipe}"/>
                     <Button Content="{DynamicResource Btn_SelectRecipe}" Style="{StaticResource SecondaryButtonStyle}" Command="{Binding PickRecipeCommand}"/>
-                    <!-- Zeigt den Namen des aktuell ausgewaehlten Rezepts. -->
                     <TextBlock Text="{Binding SelectedRecipe.Name}" FontWeight="SemiBold" Margin="0,8,0,0"/>
 
-                    <!-- Datumsauswahl fuer den Plantag. -->
                     <TextBlock Text="{DynamicResource Plan_Day}" Margin="0,14,0,0"/>
                     <DatePicker SelectedDate="{Binding Date}"/>
 
-                    <!-- Mahlzeit-Typ-Auswahl: ComboBox mit Label/Value-Paaren aus dem ViewModel. -->
                     <TextBlock Text="{DynamicResource Plan_When}" Margin="0,14,0,0"/>
                     <ComboBox ItemsSource="{Binding MealTypes}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding MealType}"/>
 
-                    <!-- Hinzufuegen-Button ruft AddPlanCommand im MealPlanViewModel auf. -->
                     <Button Content="{DynamicResource Btn_Add}" Style="{StaticResource PrimaryButtonStyle}" Margin="0,14,0,0" Command="{Binding AddPlanCommand}"/>
 
-                    <!-- Statusmeldung nach Aktionen (z.B. Fehler bei fehlendem Rezept). -->
                     <TextBlock Text="{Binding StatusMessage}" Foreground="DarkRed" Margin="0,10,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>

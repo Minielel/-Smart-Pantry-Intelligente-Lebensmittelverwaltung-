@@ -14,41 +14,27 @@ Aufbau zustaendig ist. Die eigentliche Logik liegt meistens im passenden ViewMod
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Diese Ansicht ist der Einstieg in die App. Hier meldet sich der Benutzer an oder registriert sich. -->
-    <Grid>
-
-        <!-- Zentrierte Karte: maximal 520 px breit, horizontal und vertikal mittig. -->
+<Grid>
         <Border Style="{StaticResource CardBorderStyle}" MaxWidth="520" HorizontalAlignment="Center" VerticalAlignment="Center">
             <StackPanel>
-
-                <!-- Seitentitel – Text kommt aus der Sprachdatei (DynamicResource). -->
                 <TextBlock Text="{DynamicResource Title_Login}" FontSize="34" FontWeight="SemiBold" Margin="0,0,0,18"/>
 
-                <!-- Label und Eingabefeld fuer den Benutzernamen. -->
                 <TextBlock Text="{DynamicResource Login_Username}" FontSize="14" Foreground="{DynamicResource MutedTextBrush}"/>
-                <!-- Binding an Username im LoginViewModel; UpdateSourceTrigger sorgt fuer sofortige Weitergabe. -->
                 <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" />
 
-                <!-- Label und Eingabefeld fuer das Passwort. -->
                 <TextBlock Text="{DynamicResource Login_Password}" FontSize="14" Foreground="{DynamicResource MutedTextBrush}"/>
-                <!-- Hinweis: Hier wird ein einfaches TextBox verwendet; in Produktion PasswordBox empfohlen. -->
+                
                 <TextBox Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}" />
 
-                <!-- Label und Eingabefeld fuer die E-Mail (optional, nur bei Registrierung benoetigt). -->
                 <TextBlock Text="{DynamicResource Login_EmailOptional}" FontSize="14" Foreground="{DynamicResource MutedTextBrush}"/>
-                <!-- Binding an Email im LoginViewModel. -->
                 <TextBox Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" />
 
-                <!-- Aktions-Buttons: Anmelden (primaer) und Registrieren (sekundaer) nebeneinander. -->
                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0" HorizontalAlignment="Left">
-                    <!-- Login-Button ruft LoginCommand im LoginViewModel auf. -->
                     <Button Style="{StaticResource PrimaryButtonStyle}" Content="{DynamicResource Btn_Login}" Command="{Binding LoginCommand}" Margin="0,0,10,0" MinWidth="140"/>
-                    <!-- Registrieren-Button ruft RegisterCommand im LoginViewModel auf. -->
                     <Button Style="{StaticResource SecondaryButtonStyle}" Content="{DynamicResource Btn_Register}" Command="{Binding RegisterCommand}" MinWidth="140"/>
                 </StackPanel>
 
-                <!-- Statusmeldung nach Aktionen (z.B. "Falsches Passwort" oder "Registrierung erfolgreich"). -->
                 <TextBlock Text="{Binding StatusMessage}" Margin="0,14,0,0" TextWrapping="Wrap" Foreground="#CC000000"/>
-
             </StackPanel>
         </Border>
     </Grid>

@@ -1,40 +1,5 @@
--- ============================================================
--- SmartPantry – Datenbankschema
--- Datenbankserver: MySQL (Pomelo.EntityFrameworkCore.MySql)
---
--- TABELLENÜBERSICHT UND BEZIEHUNGEN:
---
--- users           → Zentrum: alle Tabellen referenzieren users.id
---   │ 1:1
---   └──→ user_settings    (theme, language)
---
--- users
---   │ 1:n
---   └──→ food_items        (Vorrat)
---              │ n:1
---              └──→ categories  (optional, SET NULL bei Löschung)
---
--- users
---   │ 1:n
---   └──→ recipes           (Rezepte)
---              │ 1:n
---              └──→ recipe_ingredients  (Zutaten als TEXT, kein FK zu food_items!)
---
--- users + recipes → meal_plan (User plant Rezept an bestimmtem Tag)
---
--- users
---   │ 1:n
---   └──→ shopping_list     (Einkaufsliste)
---
--- LÖSCH-VERHALTEN:
---   User gelöscht → CASCADE: alle user_settings, food_items, recipes,
---                             meal_plan, shopping_list werden mitgelöscht
---   Kategorie gelöscht → SET NULL: food_items.category_id = NULL
---   Rezept gelöscht → CASCADE: recipe_ingredients + meal_plan-Einträge weg
--- ============================================================
-
--- Alle Tabellen löschen (Reihenfolge wichtig wegen FK-Abhängigkeiten!)
 SET FOREIGN_KEY_CHECKS = 0;
+
 DROP TABLE IF EXISTS meal_plan;
 DROP TABLE IF EXISTS shopping_list;
 DROP TABLE IF EXISTS recipe_ingredients;
@@ -43,221 +8,127 @@ DROP TABLE IF EXISTS food_items;
 DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS user_settings;
 DROP TABLE IF EXISTS users;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- =========================
--- TABELLE: users
--- Zentrale Tabelle. Alle anderen Haupttabellen haben einen FK hierher.
--- C#-Klasse: User.cs
--- EF-Core-DbSet: FoodDbContext.Users
--- Befüllt von: AuthService.Register() / AuthService.UpdateProfile()
--- Gelesen von: AuthService.Login()
+-- USERS
 -- =========================
+
 CREATE TABLE users (
-    -- AUTO_INCREMENT: DB vergibt Id automatisch (1, 2, 3, ...)
-    -- → nach SaveChanges() ist user.Id im C#-Objekt befüllt
-    id            INT AUTO_INCREMENT PRIMARY KEY,
-
-    -- UNIQUE: kein doppelter Username erlaubt
-    -- AuthService.Register() prüft per Any() vor dem Insert
-    username      VARCHAR(50)  NOT NULL UNIQUE,
-
-    -- E-Mail optional (UNIQUE aber nullable)
-    email         VARCHAR(100) UNIQUE,
-
-    -- NIEMALS Klartext! BCrypt.Net erzeugt ~60-Zeichen-Hash
-    -- Geprüft mit: BCrypt.Verify(plaintext, password_hash)
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-
-    -- ENUM: nur 'admin' oder 'standard' erlaubt
-    -- → C#: UserSession.IsAdmin prüft ob role == 'admin'
-    role          ENUM('admin','standard') DEFAULT 'standard',
-
-    -- Automatisch von MySQL gesetzt beim INSERT
-    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    role ENUM('admin','standard') DEFAULT 'standard',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =========================
--- TABELLE: user_settings
--- Einstellungen pro User (1:1 mit users).
--- C#-Klasse: UserSettings.cs
--- EF-Core-DbSet: FoodDbContext.UserSettings
--- Befüllt von: AuthService.Register() (Standard-Werte)
--- Aktualisiert von: SettingsService.Update()
--- Gelesen von: SettingsService.Get() + AuthService.Login() per Include()
+-- USER SETTINGS
 -- =========================
+
 CREATE TABLE user_settings (
-    id      INT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-
-    -- Theme-Name → wird in SettingsViewModel gemappt:
-    -- 'green'  → Resources/Theme.Green.xaml
-    -- 'blue'   → Resources/Theme.Blue.xaml
-    -- 'orange' → Resources/Theme.Orange.xaml
-    theme    VARCHAR(30) DEFAULT 'light',
-
-    -- Sprache → wird in SettingsViewModel gemappt:
-    -- 'de' → Resources/Strings.de.xaml
-    -- 'en' → Resources/Strings.en.xaml
+    theme VARCHAR(30) DEFAULT 'light',
     language VARCHAR(10) DEFAULT 'de',
 
-    -- FK zu users: wenn User gelöscht → Settings auch löschen
     FOREIGN KEY (user_id) REFERENCES users(id)
     ON DELETE CASCADE
 );
 
 -- =========================
--- TABELLE: categories
--- Optionale Kategorisierung für Lebensmittel.
--- C#-Klasse: Category.cs
--- EF-Core-DbSet: FoodDbContext.Categories
--- Noch kein UI vorhanden – vorbereitet für Erweiterungen.
+-- CATEGORIES
 -- =========================
+
 CREATE TABLE categories (
-    id   INT AUTO_INCREMENT PRIMARY KEY,
-    -- UNIQUE: kein doppelter Kategoriename
+    id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE
 );
 
 -- =========================
--- TABELLE: food_items
--- Kernentität. Lebensmittel im Vorrat eines Users.
--- C#-Klasse: FoodItem.cs
--- EF-Core-DbSet: FoodDbContext.FoodItems
--- WICHTIG: DB-Spalte "expiration_date" ↔ C#-Property "ExpiryDate"
---   (Mapping in FoodDbContext.OnModelCreating!)
--- Befüllt von: FoodService.Add() / ShoppingService.MoveToFoodAndRemove()
--- Gelesen von: FoodService.GetAll() / DashboardService.GetStats()
+-- FOOD ITEMS
 -- =========================
+
 CREATE TABLE food_items (
-    id              INT AUTO_INCREMENT PRIMARY KEY,
-    user_id         INT           NOT NULL,
-    name            VARCHAR(100)  NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    unit VARCHAR(10) DEFAULT 'g',
+    expiration_date DATE NOT NULL,
+    category_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    -- DECIMAL(10,2): bis zu 10 Stellen, davon 2 Nachkommastellen
-    -- Besser als FLOAT/DOUBLE → keine Rundungsfehler
-    amount          DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE,
 
-    -- Einheit: 'g', 'ml', 'Stück' usw.
-    unit            VARCHAR(10)   DEFAULT 'g',
-
-    -- ACHTUNG: Spaltenname "expiration_date" ≠ C#-Property "ExpiryDate"
-    -- Mapping in FoodDbContext: e.Property(p => p.ExpiryDate).HasColumnName("expiration_date")
-    -- DATE-Typ: nur Datum, keine Uhrzeit
-    expiration_date DATE          NOT NULL,
-
-    -- Nullable FK: Kategorie ist optional
-    category_id     INT,
-
-    -- Automatisch gesetzt beim INSERT
-    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    -- User gelöscht → alle seine food_items auch löschen
-    FOREIGN KEY (user_id)     REFERENCES users(id)      ON DELETE CASCADE,
-
-    -- Kategorie gelöscht → category_id = NULL (Item bleibt erhalten!)
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+    FOREIGN KEY (category_id) REFERENCES categories(id)
+    ON DELETE SET NULL
 );
 
 -- =========================
--- TABELLE: recipes
--- Rezepte eines Users. Zutaten in recipe_ingredients.
--- C#-Klasse: Recipe.cs
--- EF-Core-DbSet: FoodDbContext.Recipes
--- Befüllt von: RecipeService.Add() / RecipeService.Update()
--- Gelesen von: RecipeService.GetAll() / MealPlanService.GetWeekPlan() per Include()
+-- RECIPES
 -- =========================
+
 CREATE TABLE recipes (
-    id           INT AUTO_INCREMENT PRIMARY KEY,
-    user_id      INT NOT NULL,
-    name         VARCHAR(100) NOT NULL,
-
-    -- TEXT: kein Längenlimit (für längere Beschreibungen/Anleitungen)
-    description  TEXT,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
     instructions TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    -- User gelöscht → alle seine Rezepte und deren Zutaten löschen
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE
 );
 
 -- =========================
--- TABELLE: recipe_ingredients
--- Zutaten eines Rezepts.
--- C#-Klasse: RecipeIngredient.cs
--- EF-Core-DbSet: FoodDbContext.RecipeIngredients
--- WICHTIG: "food_item_name" = Zutatennamen als TEXT (kein FK zu food_items!)
---   C#-Property "FoodItem" ↔ DB-Spalte "food_item_name"
---   (Mapping in FoodDbContext.OnModelCreating!)
--- Befüllt von: RecipeService.Add() / RecipeService.Update()
+-- RECIPE INGREDIENTS
 -- =========================
+
 CREATE TABLE recipe_ingredients (
-    id   INT AUTO_INCREMENT PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     recipe_id INT NOT NULL,
+    food_item_name VARCHAR(100) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    unit VARCHAR(10) DEFAULT 'g',
 
-    -- Zutatenname als Text, KEIN Foreign Key zu food_items!
-    -- Rezepte bleiben unabhängig vom aktuellen Vorrat des Users.
-    -- ACHTUNG: C#-Property "FoodItem" ↔ DB-Spalte "food_item_name"
-    food_item_name VARCHAR(100)  NOT NULL,
-
-    amount         DECIMAL(10,2) NOT NULL,
-    unit           VARCHAR(10)   DEFAULT 'g',
-
-    -- Rezept gelöscht → alle seine Zutaten auch löschen (CASCADE)
-    FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
+    FOREIGN KEY (recipe_id) REFERENCES recipes(id)
+    ON DELETE CASCADE
 );
 
 -- =========================
--- TABELLE: meal_plan
--- Wochenplanung: User + Rezept + Datum + Mahlzeittyp.
--- C#-Klasse: MealPlan.cs
--- EF-Core-DbSet: FoodDbContext.MealPlans
--- Befüllt von: MealPlanService.Add()
--- Gelesen von: MealPlanService.GetWeekPlan() per Include(Recipe)
--- In MealPlanView.xaml: DataTrigger zeigt
---   "breakfast" → "Morgens", "lunch" → "Mittags", "dinner" → "Abends"
+-- MEAL PLAN
 -- =========================
+
 CREATE TABLE meal_plan (
-    id        INT AUTO_INCREMENT PRIMARY KEY,
-    user_id   INT  NOT NULL,
-    recipe_id INT  NOT NULL,
-
-    -- Datum des geplanten Essens (nur Datum, keine Uhrzeit)
-    date      DATE NOT NULL,
-
-    -- ENUM: nur diese 3 Werte erlaubt
-    -- C#: MealPlan.MealType speichert den englischen Wert
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    recipe_id INT NOT NULL,
+    date DATE NOT NULL,
     meal_type ENUM('breakfast','lunch','dinner') NOT NULL,
 
-    FOREIGN KEY (user_id)   REFERENCES users(id)   ON DELETE CASCADE,
-    -- Rezept gelöscht → Planeinträge die dieses Rezept nutzen auch löschen
-    FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE,
+
+    FOREIGN KEY (recipe_id) REFERENCES recipes(id)
+    ON DELETE CASCADE
 );
 
 -- =========================
--- TABELLE: shopping_list
--- Einkaufsliste eines Users.
--- C#-Klasse: ShoppingItem.cs
--- EF-Core-DbSet: FoodDbContext.ShoppingList
--- WICHTIG: DB-Spalte "checked" ↔ C#-Property "IsBought"
---   (Mapping in FoodDbContext.OnModelCreating!)
---   ("checked" ist ein SQL-Keyword, daher "IsBought" im C#-Code)
--- Befüllt von: ShoppingService.Add() / ShoppingService.UpsertLowStockFromFood()
--- Geleert von: ShoppingService.MoveToFoodAndRemove() (Transfer zu food_items)
+-- SHOPPING LIST
 -- =========================
-CREATE TABLE shopping_list (
-    id      INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT           NOT NULL,
-    name    VARCHAR(100)  NOT NULL,
-    amount  DECIMAL(10,2) NOT NULL,
-    unit    VARCHAR(10)   DEFAULT 'g',
 
-    -- ACHTUNG: DB-Spalte "checked" ↔ C#-Property "IsBought"
-    -- false = noch nicht eingekauft
-    -- true  = wurde zu food_items übernommen (und wird dann gelöscht)
+CREATE TABLE shopping_list (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    unit VARCHAR(10) DEFAULT 'g',
     checked BOOLEAN DEFAULT FALSE,
 
-    -- User gelöscht → seine Einkaufsliste auch löschen
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE
 );
